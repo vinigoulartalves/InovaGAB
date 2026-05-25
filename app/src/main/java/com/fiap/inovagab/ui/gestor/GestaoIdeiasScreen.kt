@@ -4,6 +4,6 @@ import androidx.compose.runtime.Composable
 import com.fiap.inovagab.core.ui.components.PlaceholderScreen
 
 @Composable
-fun GestaoIdeiasScreen() {
-    PlaceholderScreen(titulo = "Gestão de Ideias")
+fun GestaoIdeiasScreen(onBack: () -> Unit = {}) {
+    PlaceholderScreen(titulo = "Gestão de Ideias", onBack = onBack)
 }

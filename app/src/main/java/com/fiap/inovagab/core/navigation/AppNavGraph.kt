@@ -37,6 +37,8 @@ fun AppNavGraph(
         }
     }
 
+    val back: () -> Unit = { navController.popBackStack() }
+
     NavHost(
         navController = navController,
         startDestination = startDestination
@@ -56,20 +58,45 @@ fun AppNavGraph(
             )
         }
 
-        composable(Routes.HOME_OPERADOR) { HomeOperadorScreen(onLogout = logout) }
-        composable(Routes.IDEIA_FORM) { IdeiaFormScreen() }
-        composable(Routes.MINHAS_IDEIAS) { MinhasIdeiasScreen() }
+        composable(Routes.HOME_OPERADOR) {
+            HomeOperadorScreen(
+                onVerOrientacoes = { navController.navigate(Routes.ORIENTACOES_LIST) },
+                onCadastrarIdeia = { navController.navigate(Routes.IDEIA_FORM) },
+                onMinhasIdeias = { navController.navigate(Routes.MINHAS_IDEIAS) },
+                onRanking = { navController.navigate(Routes.RANKING) },
+                onLogout = logout
+            )
+        }
+        composable(Routes.IDEIA_FORM) { IdeiaFormScreen(onBack = back) }
+        composable(Routes.MINHAS_IDEIAS) { MinhasIdeiasScreen(onBack = back) }
 
-        composable(Routes.HOME_GESTOR) { HomeGestorScreen(onLogout = logout) }
-        composable(Routes.GESTAO_IDEIAS) { GestaoIdeiasScreen() }
-        composable(Routes.PROJETO_FORM) { ProjetoFormScreen() }
+        composable(Routes.HOME_GESTOR) {
+            HomeGestorScreen(
+                onVerOrientacoes = { navController.navigate(Routes.ORIENTACOES_LIST) },
+                onGerenciarIdeias = { navController.navigate(Routes.GESTAO_IDEIAS) },
+                onCadastrarProjeto = { navController.navigate(Routes.PROJETO_FORM) },
+                onProjetos = { navController.navigate(Routes.PROJETOS_LIST) },
+                onRanking = { navController.navigate(Routes.RANKING) },
+                onLogout = logout
+            )
+        }
+        composable(Routes.GESTAO_IDEIAS) { GestaoIdeiasScreen(onBack = back) }
+        composable(Routes.PROJETO_FORM) { ProjetoFormScreen(onBack = back) }
 
-        composable(Routes.HOME_LIDER) { HomeLiderScreen(onLogout = logout) }
-        composable(Routes.DASHBOARD) { DashboardScreen() }
-        composable(Routes.ORIENTACAO_FORM) { OrientacaoFormScreen() }
+        composable(Routes.HOME_LIDER) {
+            HomeLiderScreen(
+                onGerenciarOrientacoes = { navController.navigate(Routes.ORIENTACAO_FORM) },
+                onVerProjetos = { navController.navigate(Routes.PROJETOS_LIST) },
+                onDashboard = { navController.navigate(Routes.DASHBOARD) },
+                onRanking = { navController.navigate(Routes.RANKING) },
+                onLogout = logout
+            )
+        }
+        composable(Routes.DASHBOARD) { DashboardScreen(onBack = back) }
+        composable(Routes.ORIENTACAO_FORM) { OrientacaoFormScreen(onBack = back) }
 
-        composable(Routes.ORIENTACOES_LIST) { OrientacoesListScreen() }
-        composable(Routes.PROJETOS_LIST) { ProjetosListScreen() }
-        composable(Routes.RANKING) { RankingScreen() }
+        composable(Routes.ORIENTACOES_LIST) { OrientacoesListScreen(onBack = back) }
+        composable(Routes.PROJETOS_LIST) { ProjetosListScreen(onBack = back) }
+        composable(Routes.RANKING) { RankingScreen(onBack = back) }
     }
 }

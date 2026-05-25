@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -26,6 +28,7 @@ import com.fiap.inovagab.core.session.SessionManager
 fun PlaceholderScreen(
     titulo: String,
     descricao: String = "Em construção. Esta tela será implementada nas próximas etapas do Challenge.",
+    onBack: (() -> Unit)? = null,
     onLogout: (() -> Unit)? = null
 ) {
     val usuario by SessionManager.currentUser.collectAsState()
@@ -65,8 +68,26 @@ fun PlaceholderScreen(
                 textAlign = TextAlign.Center
             )
 
-            if (onLogout != null) {
+            if (onBack != null) {
                 Spacer(modifier = Modifier.height(24.dp))
+                OutlinedButton(
+                    onClick = onBack,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = Color(0xFF002B5C)
+                    )
+                ) {
+                    Text(
+                        text = "Voltar",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                }
+            }
+
+            if (onLogout != null) {
+                Spacer(modifier = Modifier.height(8.dp))
                 AppButton(
                     text = "Sair",
                     onClick = onLogout,
