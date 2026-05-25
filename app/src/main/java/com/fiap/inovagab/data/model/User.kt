@@ -1,6 +1,6 @@
 package com.fiap.inovagab.data.model
 
-enum class UserRole {
+enum class Perfil {
     OPERADOR,
     GESTOR,
     LIDER
@@ -10,7 +10,6 @@ data class User(
     val uid: String = "",
     val nome: String = "",
     val email: String = "",
-    val role: UserRole = UserRole.OPERADOR,
-    val area: String = "",
+    val perfil: Perfil = Perfil.OPERADOR,
     val pontos: Int = 0
 )
