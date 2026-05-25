@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1066822534170",
+    "project_id": "inovagab-32630",
+    "storage_bucket": "inovagab-32630.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1066822534170:android:c6b56340bb33938ac4bda3",
+        "android_client_info": {
+          "package_name": "com.fiap.inovagab"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB5-Jqon24k24gKJR8G28FRdGRCPXtxJmM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
