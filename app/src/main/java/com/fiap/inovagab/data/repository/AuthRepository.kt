@@ -1,7 +1,7 @@
 package com.fiap.inovagab.data.repository
 
+import com.fiap.inovagab.data.model.Perfil
 import com.fiap.inovagab.data.model.User
-import com.fiap.inovagab.data.model.UserRole
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
@@ -15,35 +15,26 @@ class AuthRepository(
         get() = auth.currentUser?.uid
 
     suspend fun login(email: String, senha: String): Result<User> = runCatching {
-        val result = auth.signInWithEmailAndPassword(email, senha).await()
-        val uid = result.user?.uid ?: error("Falha ao obter usuário")
-        carregarUsuario(uid) ?: error("Usuário não encontrado no Firestore")
-    }
-
-    suspend fun cadastrar(
-        nome: String,
-        email: String,
-        senha: String,
-        role: UserRole,
-        area: String
-    ): Result<User> = runCatching {
-        val result = auth.createUserWithEmailAndPassword(email, senha).await()
-        val uid = result.user?.uid ?: error("Falha ao criar usuário")
-        val user = User(
-            uid = uid,
-            nome = nome,
-            email = email,
-            role = role,
-            area = area,
-            pontos = 0
-        )
-        firestore.collection("usuarios").document(uid).set(user).await()
-        user
+        val result = auth.signInWithEmailAndPassword(email.trim(), senha).await()
+        val uid = result.user?.uid ?: error("Falha ao obter usuário autenticado.")
+        carregarUsuario(uid) ?: error("Perfil de usuário não encontrado no Firestore.")
     }
 
     suspend fun carregarUsuario(uid: String): User? {
-        val snap = firestore.collection("usuarios").document(uid).get().await()
-        return snap.toObject(User::class.java)
+        val snap = firestore.collection("users").document(uid).get().await()
+        if (!snap.exists()) return null
+
+        val perfilStr = snap.getString("perfil")?.trim()?.uppercase()
+        val perfil = runCatching { Perfil.valueOf(perfilStr ?: "") }
+            .getOrElse { error("Perfil inválido para o usuário.") }
+
+        return User(
+            uid = uid,
+            nome = snap.getString("nome").orEmpty(),
+            email = snap.getString("email").orEmpty(),
+            perfil = perfil,
+            pontos = (snap.getLong("pontos") ?: 0L).toInt()
+        )
     }
 
     fun logout() {

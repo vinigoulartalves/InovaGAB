@@ -4,6 +4,6 @@ import androidx.compose.runtime.Composable
 import com.fiap.inovagab.core.ui.components.PlaceholderScreen
 
 @Composable
-fun HomeGestorScreen() {
-    PlaceholderScreen(titulo = "Home Gestor")
+fun HomeGestorScreen(onLogout: () -> Unit = {}) {
+    PlaceholderScreen(titulo = "Home Gestor", onLogout = onLogout)
 }

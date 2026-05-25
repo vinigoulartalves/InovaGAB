@@ -17,6 +17,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,13 +31,22 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.fiap.inovagab.core.ui.components.AppButton
 import com.fiap.inovagab.core.ui.components.AppTextField
+import com.fiap.inovagab.data.model.Perfil
 
 @Composable
 fun LoginScreen(
-    onLoginSucesso: () -> Unit = {},
+    onLoginSucesso: (Perfil) -> Unit = {},
     viewModel: LoginViewModel = viewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(state.perfilLogado) {
+        val perfil = state.perfilLogado
+        if (perfil != null) {
+            viewModel.consumirNavegacao()
+            onLoginSucesso(perfil)
+        }
+    }
 
     val gradient = Brush.verticalGradient(
         colors = listOf(
