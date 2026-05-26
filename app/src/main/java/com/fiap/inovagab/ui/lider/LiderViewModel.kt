@@ -24,6 +24,18 @@ data class ProjetosConsultaUiState(
     val erro: String? = null
 )
 
+data class DashboardUiState(
+    val carregando: Boolean = false,
+    val erro: String? = null,
+    val totalProjetos: Int = 0,
+    val investimentoTotal: Double = 0.0,
+    val retornoTotal: Double = 0.0,
+    val lucroObtido: Double = 0.0,
+    val roiGeral: Double = 0.0,
+    val reducaoCustosTotal: Double = 0.0,
+    val ganhoProdutividadeMedio: Double = 0.0
+)
+
 data class OrientacaoFormUiState(
     val id: String = "",
     val titulo: String = "",
@@ -50,6 +62,58 @@ class LiderViewModel(
 
     private val _projetosState = MutableStateFlow(ProjetosConsultaUiState())
     val projetosState: StateFlow<ProjetosConsultaUiState> = _projetosState.asStateFlow()
+
+    private val _dashboardState = MutableStateFlow(DashboardUiState())
+    val dashboardState: StateFlow<DashboardUiState> = _dashboardState.asStateFlow()
+
+    fun carregarDashboard() {
+        _dashboardState.update { it.copy(carregando = true, erro = null) }
+        viewModelScope.launch {
+            projetoRepository.listar().fold(
+                onSuccess = { projetos ->
+                    _dashboardState.value = calcularDashboard(projetos)
+                },
+                onFailure = { erro ->
+                    _dashboardState.update {
+                        it.copy(
+                            carregando = false,
+                            erro = erro.message ?: "Não foi possível carregar a dashboard."
+                        )
+                    }
+                }
+            )
+        }
+    }
+
+    private fun calcularDashboard(projetos: List<Projeto>): DashboardUiState {
+        val totalProjetos = projetos.size
+        val investimentoTotal = projetos.sumOf { it.investimento }
+        val retornoTotal = projetos.sumOf { it.retornoFinanceiro }
+        val lucroObtido = retornoTotal - investimentoTotal
+        val roiGeral = if (investimentoTotal == 0.0) {
+            0.0
+        } else {
+            ((retornoTotal - investimentoTotal) / investimentoTotal) * 100
+        }
+        val reducaoCustosTotal = projetos.sumOf { it.reducaoCustos }
+        val ganhoProdutividadeMedio = if (projetos.isEmpty()) {
+            0.0
+        } else {
+            projetos.sumOf { it.ganhoProdutividade } / projetos.size
+        }
+
+        return DashboardUiState(
+            carregando = false,
+            erro = null,
+            totalProjetos = totalProjetos,
+            investimentoTotal = investimentoTotal,
+            retornoTotal = retornoTotal,
+            lucroObtido = lucroObtido,
+            roiGeral = roiGeral,
+            reducaoCustosTotal = reducaoCustosTotal,
+            ganhoProdutividadeMedio = ganhoProdutividadeMedio
+        )
+    }
 
     fun consultarProjetos() {
         _projetosState.update { it.copy(carregando = true, erro = null) }
