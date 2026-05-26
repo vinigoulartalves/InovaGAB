@@ -69,7 +69,12 @@ fun AppNavGraph(
                 onLogout = logout
             )
         }
-        composable(Routes.IDEIA_FORM) { IdeiaFormScreen(onBack = back) }
+        composable(Routes.IDEIA_FORM) {
+            IdeiaFormScreen(
+                onBack = back,
+                onSucesso = back
+            )
+        }
         composable(Routes.MINHAS_IDEIAS) { MinhasIdeiasScreen(onBack = back) }
 
         composable(Routes.HOME_GESTOR) {
