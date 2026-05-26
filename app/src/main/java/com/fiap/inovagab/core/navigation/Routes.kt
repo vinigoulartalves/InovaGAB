@@ -13,9 +13,15 @@ object Routes {
 
     const val HOME_LIDER = "home_lider"
     const val DASHBOARD = "dashboard"
-    const val ORIENTACAO_FORM = "orientacao_form"
 
     const val ORIENTACOES_LIST = "orientacoes_list"
+    const val ORIENTACAO_FORM_ARG_ID = "orientacaoId"
+    const val ORIENTACAO_FORM = "orientacao_form?$ORIENTACAO_FORM_ARG_ID={$ORIENTACAO_FORM_ARG_ID}"
+
+    fun orientacaoFormNova(): String = "orientacao_form"
+
+    fun orientacaoFormEdicao(id: String): String = "orientacao_form?$ORIENTACAO_FORM_ARG_ID=$id"
+
     const val PROJETOS_LIST = "projetos_list"
     const val RANKING = "ranking"
 }
