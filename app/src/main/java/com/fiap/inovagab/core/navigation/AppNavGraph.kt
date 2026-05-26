@@ -2,9 +2,11 @@ package com.fiap.inovagab.core.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.fiap.inovagab.core.session.SessionManager
 import com.fiap.inovagab.data.model.Perfil
 import com.fiap.inovagab.data.repository.AuthRepository
@@ -85,7 +87,7 @@ fun AppNavGraph(
 
         composable(Routes.HOME_LIDER) {
             HomeLiderScreen(
-                onGerenciarOrientacoes = { navController.navigate(Routes.ORIENTACAO_FORM) },
+                onGerenciarOrientacoes = { navController.navigate(Routes.ORIENTACOES_LIST) },
                 onVerProjetos = { navController.navigate(Routes.PROJETOS_LIST) },
                 onDashboard = { navController.navigate(Routes.DASHBOARD) },
                 onRanking = { navController.navigate(Routes.RANKING) },
@@ -93,9 +95,32 @@ fun AppNavGraph(
             )
         }
         composable(Routes.DASHBOARD) { DashboardScreen(onBack = back) }
-        composable(Routes.ORIENTACAO_FORM) { OrientacaoFormScreen(onBack = back) }
 
-        composable(Routes.ORIENTACOES_LIST) { OrientacoesListScreen(onBack = back) }
+        composable(
+            route = Routes.ORIENTACAO_FORM,
+            arguments = listOf(
+                navArgument(Routes.ORIENTACAO_FORM_ARG_ID) {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
+            )
+        ) { entry ->
+            val id = entry.arguments?.getString(Routes.ORIENTACAO_FORM_ARG_ID)
+            OrientacaoFormScreen(
+                orientacaoId = id,
+                onBack = back,
+                onSucesso = back
+            )
+        }
+
+        composable(Routes.ORIENTACOES_LIST) {
+            OrientacoesListScreen(
+                onBack = back,
+                onCriar = { navController.navigate(Routes.orientacaoFormNova()) },
+                onEditar = { id -> navController.navigate(Routes.orientacaoFormEdicao(id)) }
+            )
+        }
         composable(Routes.PROJETOS_LIST) { ProjetosListScreen(onBack = back) }
         composable(Routes.RANKING) { RankingScreen(onBack = back) }
     }
