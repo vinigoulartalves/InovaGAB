@@ -4,6 +4,6 @@ import androidx.compose.runtime.Composable
 import com.fiap.inovagab.core.ui.components.PlaceholderScreen
 
 @Composable
-fun ProjetoFormScreen() {
-    PlaceholderScreen(titulo = "Novo Projeto")
+fun ProjetoFormScreen(onBack: () -> Unit = {}) {
+    PlaceholderScreen(titulo = "Novo Projeto", onBack = onBack)
 }

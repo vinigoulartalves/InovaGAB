@@ -4,6 +4,6 @@ import androidx.compose.runtime.Composable
 import com.fiap.inovagab.core.ui.components.PlaceholderScreen
 
 @Composable
-fun RankingScreen() {
-    PlaceholderScreen(titulo = "Ranking de Inovação")
+fun RankingScreen(onBack: () -> Unit = {}) {
+    PlaceholderScreen(titulo = "Ranking de Inovação", onBack = onBack)
 }
