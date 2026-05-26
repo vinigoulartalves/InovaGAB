@@ -19,7 +19,6 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -29,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.fiap.inovagab.core.ui.components.AppCard
+import com.fiap.inovagab.core.ui.effects.OnResumeEffect
 import com.fiap.inovagab.data.model.Ideia
 import com.fiap.inovagab.data.model.PrioridadeIdeia
 import com.fiap.inovagab.data.model.StatusIdeia
@@ -40,7 +40,7 @@ fun MinhasIdeiasScreen(
 ) {
     val state by viewModel.listState.collectAsStateWithLifecycle()
 
-    LaunchedEffect(Unit) {
+    OnResumeEffect {
         viewModel.carregarMinhasIdeias()
     }
 

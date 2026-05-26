@@ -29,7 +29,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -44,6 +43,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.fiap.inovagab.core.session.SessionManager
 import com.fiap.inovagab.core.ui.components.AppCard
+import com.fiap.inovagab.core.ui.effects.OnResumeEffect
 import com.fiap.inovagab.data.model.Orientacao
 import com.fiap.inovagab.data.model.Perfil
 import com.fiap.inovagab.ui.lider.LiderViewModel
@@ -62,7 +62,7 @@ fun OrientacoesListScreen(
     val usuario by SessionManager.currentUser.collectAsState()
     val isLider = usuario?.perfil == Perfil.LIDER
 
-    LaunchedEffect(Unit) {
+    OnResumeEffect {
         viewModel.carregarOrientacoes()
     }
 
@@ -185,7 +185,7 @@ fun OrientacoesListScreen(
             },
             confirmButton = {
                 TextButton(onClick = {
-                    viewModel.excluirDaLista(alvo.id)
+                    viewModel.excluir(alvo.id)
                     orientacaoParaExcluir = null
                 }) {
                     Text(text = "Excluir", color = MaterialTheme.colorScheme.error)

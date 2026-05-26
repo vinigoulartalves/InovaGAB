@@ -28,7 +28,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -40,9 +39,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.fiap.inovagab.core.session.SessionManager
 import com.fiap.inovagab.core.ui.components.AppCard
+import com.fiap.inovagab.core.ui.effects.OnResumeEffect
 import com.fiap.inovagab.data.model.Perfil
 import com.fiap.inovagab.data.model.Projeto
-import com.fiap.inovagab.data.model.StatusProjeto
 import com.fiap.inovagab.ui.gestor.GestorViewModel
 import com.fiap.inovagab.ui.gestor.corDoStatusProjeto
 import com.fiap.inovagab.ui.gestor.formatarStatusProjeto
@@ -72,17 +71,11 @@ fun ProjetosListScreen(
     val carregando = if (isLider) liderState.carregando else gestorState.carregando
     val erro = if (isLider) liderState.erro else gestorState.erro
 
-    LaunchedEffect(perfil) {
-        if (isLider) {
-            liderViewModel.consultarProjetos()
-        } else {
-            gestorViewModel.carregarProjetos()
-        }
-    }
-
     val recarregar: () -> Unit = {
         if (isLider) liderViewModel.consultarProjetos() else gestorViewModel.carregarProjetos()
     }
+
+    OnResumeEffect { recarregar() }
 
     Scaffold(
         containerColor = Color(0xFFF5F7FA),
@@ -119,9 +112,9 @@ fun ProjetosListScreen(
 
             Text(
                 text = when {
-                    isGestor -> "Cadastre, edite e acompanhe os projetos do gabinete."
+                    isGestor -> "Cadastre, edite e acompanhe os projetos do Grupo Águia Branca."
                     isLider -> "Consulte os projetos e iniciativas em andamento."
-                    else -> "Acompanhe os projetos do gabinete."
+                    else -> "Acompanhe os projetos do Grupo Águia Branca."
                 },
                 color = Color(0xFF4A5A6E),
                 style = MaterialTheme.typography.bodyMedium
@@ -339,9 +332,6 @@ private fun EtiquetaProjeto(texto: String, cor: Color) {
         )
     }
 }
-
-@Suppress("unused")
-private fun statusDescritivo(status: StatusProjeto): String = formatarStatusProjeto(status)
 
 private fun formatarMoeda(valor: Double): String {
     val formato = NumberFormat.getCurrencyInstance(Locale("pt", "BR"))

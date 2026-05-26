@@ -5,7 +5,6 @@ import com.fiap.inovagab.data.model.PrioridadeIdeia
 import com.fiap.inovagab.data.model.StatusIdeia
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.Query
 import kotlinx.coroutines.tasks.await
 
 class IdeiaRepository(
