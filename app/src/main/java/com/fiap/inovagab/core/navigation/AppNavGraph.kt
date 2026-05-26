@@ -81,14 +81,31 @@ fun AppNavGraph(
             HomeGestorScreen(
                 onVerOrientacoes = { navController.navigate(Routes.ORIENTACOES_LIST) },
                 onGerenciarIdeias = { navController.navigate(Routes.GESTAO_IDEIAS) },
-                onCadastrarProjeto = { navController.navigate(Routes.PROJETO_FORM) },
+                onCadastrarProjeto = { navController.navigate(Routes.projetoFormNovo()) },
                 onProjetos = { navController.navigate(Routes.PROJETOS_LIST) },
                 onRanking = { navController.navigate(Routes.RANKING) },
                 onLogout = logout
             )
         }
         composable(Routes.GESTAO_IDEIAS) { GestaoIdeiasScreen(onBack = back) }
-        composable(Routes.PROJETO_FORM) { ProjetoFormScreen(onBack = back) }
+
+        composable(
+            route = Routes.PROJETO_FORM,
+            arguments = listOf(
+                navArgument(Routes.PROJETO_FORM_ARG_ID) {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
+            )
+        ) { entry ->
+            val id = entry.arguments?.getString(Routes.PROJETO_FORM_ARG_ID)
+            ProjetoFormScreen(
+                projetoId = id,
+                onBack = back,
+                onSucesso = back
+            )
+        }
 
         composable(Routes.HOME_LIDER) {
             HomeLiderScreen(
@@ -126,7 +143,13 @@ fun AppNavGraph(
                 onEditar = { id -> navController.navigate(Routes.orientacaoFormEdicao(id)) }
             )
         }
-        composable(Routes.PROJETOS_LIST) { ProjetosListScreen(onBack = back) }
+        composable(Routes.PROJETOS_LIST) {
+            ProjetosListScreen(
+                onBack = back,
+                onCriar = { navController.navigate(Routes.projetoFormNovo()) },
+                onEditar = { id -> navController.navigate(Routes.projetoFormEdicao(id)) }
+            )
+        }
         composable(Routes.RANKING) { RankingScreen(onBack = back) }
     }
 }
