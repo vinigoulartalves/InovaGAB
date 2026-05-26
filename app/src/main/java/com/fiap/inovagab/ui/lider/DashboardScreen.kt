@@ -16,7 +16,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -28,6 +27,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.fiap.inovagab.core.session.SessionManager
 import com.fiap.inovagab.core.ui.components.AppCard
+import com.fiap.inovagab.core.ui.effects.OnResumeEffect
 import com.fiap.inovagab.data.model.Perfil
 import java.text.NumberFormat
 import java.util.Locale
@@ -41,7 +41,7 @@ fun DashboardScreen(
     val perfil = usuario?.perfil
     val state by viewModel.dashboardState.collectAsStateWithLifecycle()
 
-    LaunchedEffect(perfil) {
+    OnResumeEffect {
         if (perfil == Perfil.LIDER) {
             viewModel.carregarDashboard()
         }

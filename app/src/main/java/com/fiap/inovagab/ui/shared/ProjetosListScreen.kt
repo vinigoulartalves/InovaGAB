@@ -28,7 +28,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -40,6 +39,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.fiap.inovagab.core.session.SessionManager
 import com.fiap.inovagab.core.ui.components.AppCard
+import com.fiap.inovagab.core.ui.effects.OnResumeEffect
 import com.fiap.inovagab.data.model.Perfil
 import com.fiap.inovagab.data.model.Projeto
 import com.fiap.inovagab.ui.gestor.GestorViewModel
@@ -71,17 +71,11 @@ fun ProjetosListScreen(
     val carregando = if (isLider) liderState.carregando else gestorState.carregando
     val erro = if (isLider) liderState.erro else gestorState.erro
 
-    LaunchedEffect(perfil) {
-        if (isLider) {
-            liderViewModel.consultarProjetos()
-        } else {
-            gestorViewModel.carregarProjetos()
-        }
-    }
-
     val recarregar: () -> Unit = {
         if (isLider) liderViewModel.consultarProjetos() else gestorViewModel.carregarProjetos()
     }
+
+    OnResumeEffect { recarregar() }
 
     Scaffold(
         containerColor = Color(0xFFF5F7FA),
