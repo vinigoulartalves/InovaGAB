@@ -15,6 +15,13 @@ class IdeiaRepository(
     private val ideiasCollection = firestore.collection("ideias")
     private val usersCollection = firestore.collection("users")
 
+    suspend fun listarTodas(): Result<List<Ideia>> = runCatching {
+        val snap = ideiasCollection.get().await()
+        snap.documents
+            .mapNotNull { doc -> doc.toObject(Ideia::class.java)?.copy(id = doc.id) }
+            .sortedByDescending { it.criadoEm }
+    }
+
     suspend fun listarPorAutor(autorId: String): Result<List<Ideia>> = runCatching {
         require(autorId.isNotBlank()) { "ID do autor é obrigatório." }
         val snap = ideiasCollection
@@ -57,7 +64,44 @@ class IdeiaRepository(
         Unit
     }
 
+    suspend fun atualizarPrioridade(
+        ideiaId: String,
+        prioridade: PrioridadeIdeia
+    ): Result<Unit> = runCatching {
+        require(ideiaId.isNotBlank()) { "ID da ideia é obrigatório." }
+        ideiasCollection.document(ideiaId).update("prioridade", prioridade.name).await()
+        Unit
+    }
+
+    /**
+     * Atualiza o status de uma ideia e, quando o novo status for [StatusIdeia.APROVADA] e a
+     * ideia ainda não estiver aprovada, soma [PONTOS_POR_APROVACAO] pontos ao autor.
+     * Isso evita pontuar novamente caso a ideia já estivesse aprovada.
+     */
+    suspend fun atualizarStatusComPontuacao(
+        ideia: Ideia,
+        novoStatus: StatusIdeia
+    ): Result<Unit> = runCatching {
+        require(ideia.id.isNotBlank()) { "ID da ideia é obrigatório." }
+
+        ideiasCollection.document(ideia.id).update("status", novoStatus.name).await()
+
+        val deveSomarPontos = novoStatus == StatusIdeia.APROVADA &&
+            ideia.status != StatusIdeia.APROVADA &&
+            ideia.autorId.isNotBlank()
+
+        if (deveSomarPontos) {
+            runCatching {
+                usersCollection.document(ideia.autorId)
+                    .update("pontos", FieldValue.increment(PONTOS_POR_APROVACAO))
+                    .await()
+            }
+        }
+        Unit
+    }
+
     companion object {
         const val PONTOS_POR_IDEIA: Long = 10
+        const val PONTOS_POR_APROVACAO: Long = 30
     }
 }
