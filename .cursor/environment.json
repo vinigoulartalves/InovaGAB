@@ -1,0 +1,4 @@
+{
+  "name": "InovaGAB Android",
+  "install": "bash .cursor/install-android-sdk.sh"
+}
