@@ -11,16 +11,13 @@ class AuthRepository(
     private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
 ) {
 
-    val currentUserId: String?
-        get() = auth.currentUser?.uid
-
     suspend fun login(email: String, senha: String): Result<User> = runCatching {
         val result = auth.signInWithEmailAndPassword(email.trim(), senha).await()
         val uid = result.user?.uid ?: error("Falha ao obter usuário autenticado.")
         carregarUsuario(uid) ?: error("Perfil de usuário não encontrado no Firestore.")
     }
 
-    suspend fun carregarUsuario(uid: String): User? {
+    private suspend fun carregarUsuario(uid: String): User? {
         val snap = firestore.collection("users").document(uid).get().await()
         if (!snap.exists()) return null
 

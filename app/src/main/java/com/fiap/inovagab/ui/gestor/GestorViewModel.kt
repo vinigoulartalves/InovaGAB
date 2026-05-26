@@ -144,10 +144,6 @@ class GestorViewModel(
         }
     }
 
-    fun consumirMensagem() {
-        _state.update { it.copy(mensagem = null) }
-    }
-
     fun carregarProjetos() {
         _projetosListState.update { it.copy(carregando = true, erro = null) }
         viewModelScope.launch {
@@ -359,10 +355,6 @@ class GestorViewModel(
 
     fun consumirNavegacaoProjeto() {
         _projetoFormState.update { it.copy(concluido = false) }
-    }
-
-    fun limparFormularioProjeto() {
-        _projetoFormState.value = ProjetoFormUiState()
     }
 
     private fun sanitizarNumero(valor: String): String {

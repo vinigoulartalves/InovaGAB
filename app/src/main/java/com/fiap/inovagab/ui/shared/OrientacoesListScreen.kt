@@ -185,7 +185,7 @@ fun OrientacoesListScreen(
             },
             confirmButton = {
                 TextButton(onClick = {
-                    viewModel.excluirDaLista(alvo.id)
+                    viewModel.excluir(alvo.id)
                     orientacaoParaExcluir = null
                 }) {
                     Text(text = "Excluir", color = MaterialTheme.colorScheme.error)

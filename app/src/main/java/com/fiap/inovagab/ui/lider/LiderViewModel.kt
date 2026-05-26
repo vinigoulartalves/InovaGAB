@@ -273,15 +273,7 @@ class LiderViewModel(
         }
     }
 
-    fun excluirDaLista(id: String) {
-        excluir(id)
-    }
-
     fun consumirNavegacao() {
         _formState.update { it.copy(concluido = false) }
-    }
-
-    fun limparFormulario() {
-        _formState.value = OrientacaoFormUiState()
     }
 }

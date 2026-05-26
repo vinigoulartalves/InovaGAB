@@ -42,7 +42,6 @@ import com.fiap.inovagab.core.session.SessionManager
 import com.fiap.inovagab.core.ui.components.AppCard
 import com.fiap.inovagab.data.model.Perfil
 import com.fiap.inovagab.data.model.Projeto
-import com.fiap.inovagab.data.model.StatusProjeto
 import com.fiap.inovagab.ui.gestor.GestorViewModel
 import com.fiap.inovagab.ui.gestor.corDoStatusProjeto
 import com.fiap.inovagab.ui.gestor.formatarStatusProjeto
@@ -339,9 +338,6 @@ private fun EtiquetaProjeto(texto: String, cor: Color) {
         )
     }
 }
-
-@Suppress("unused")
-private fun statusDescritivo(status: StatusProjeto): String = formatarStatusProjeto(status)
 
 private fun formatarMoeda(valor: Double): String {
     val formato = NumberFormat.getCurrencyInstance(Locale("pt", "BR"))

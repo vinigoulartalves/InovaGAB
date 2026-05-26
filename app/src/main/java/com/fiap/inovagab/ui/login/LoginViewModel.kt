@@ -76,10 +76,6 @@ class LoginViewModel(
         _uiState.update { it.copy(perfilLogado = null) }
     }
 
-    fun limparErro() {
-        _uiState.update { it.copy(erro = null) }
-    }
-
     private fun mensagemDeErro(erro: Throwable): String = when (erro) {
         is FirebaseAuthInvalidUserException -> "Usuário não encontrado."
         is FirebaseAuthInvalidCredentialsException -> "E-mail ou senha inválidos."
