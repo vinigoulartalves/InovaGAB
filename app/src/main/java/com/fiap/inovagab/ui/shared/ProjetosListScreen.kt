@@ -118,9 +118,9 @@ fun ProjetosListScreen(
 
             Text(
                 text = when {
-                    isGestor -> "Cadastre, edite e acompanhe os projetos do gabinete."
+                    isGestor -> "Cadastre, edite e acompanhe os projetos do Grupo Águia Branca."
                     isLider -> "Consulte os projetos e iniciativas em andamento."
-                    else -> "Acompanhe os projetos do gabinete."
+                    else -> "Acompanhe os projetos do Grupo Águia Branca."
                 },
                 color = Color(0xFF4A5A6E),
                 style = MaterialTheme.typography.bodyMedium

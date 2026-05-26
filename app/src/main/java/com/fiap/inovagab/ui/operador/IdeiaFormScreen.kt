@@ -61,7 +61,7 @@ fun IdeiaFormScreen(
         Spacer(modifier = Modifier.height(4.dp))
 
         Text(
-            text = "Cadastre uma nova ideia ou problema para o gabinete.",
+            text = "Cadastre uma nova ideia ou problema para o Grupo Águia Branca.",
             color = Color(0xFF4A5A6E),
             style = MaterialTheme.typography.bodyMedium
         )
