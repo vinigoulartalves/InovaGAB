@@ -9,7 +9,13 @@ object Routes {
 
     const val HOME_GESTOR = "home_gestor"
     const val GESTAO_IDEIAS = "gestao_ideias"
-    const val PROJETO_FORM = "projeto_form"
+
+    const val PROJETO_FORM_ARG_ID = "projetoId"
+    const val PROJETO_FORM = "projeto_form?$PROJETO_FORM_ARG_ID={$PROJETO_FORM_ARG_ID}"
+
+    fun projetoFormNovo(): String = "projeto_form"
+
+    fun projetoFormEdicao(id: String): String = "projeto_form?$PROJETO_FORM_ARG_ID=$id"
 
     const val HOME_LIDER = "home_lider"
     const val DASHBOARD = "dashboard"

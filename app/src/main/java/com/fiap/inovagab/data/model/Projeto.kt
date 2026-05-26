@@ -1,7 +1,7 @@
 package com.fiap.inovagab.data.model
 
 enum class StatusProjeto {
-    PLANEJAMENTO,
+    PLANEJADO,
     EM_ANDAMENTO,
     CONCLUIDO,
     CANCELADO
@@ -9,11 +9,16 @@ enum class StatusProjeto {
 
 data class Projeto(
     val id: String = "",
-    val titulo: String = "",
+    val nome: String = "",
     val descricao: String = "",
-    val ideiaOrigemId: String = "",
-    val responsavelUid: String = "",
-    val responsavelNome: String = "",
-    val status: StatusProjeto = StatusProjeto.PLANEJAMENTO,
+    val ideiaId: String = "",
+    val responsavel: String = "",
+    val etapa: String = "",
+    val status: StatusProjeto = StatusProjeto.PLANEJADO,
+    val investimento: Double = 0.0,
+    val retornoFinanceiro: Double = 0.0,
+    val reducaoCustos: Double = 0.0,
+    val ganhoProdutividade: Double = 0.0,
+    val prazo: String = "",
     val criadoEm: Long = System.currentTimeMillis()
 )

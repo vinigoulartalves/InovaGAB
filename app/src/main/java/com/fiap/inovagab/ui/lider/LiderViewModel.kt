@@ -3,7 +3,9 @@ package com.fiap.inovagab.ui.lider
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fiap.inovagab.data.model.Orientacao
+import com.fiap.inovagab.data.model.Projeto
 import com.fiap.inovagab.data.repository.OrientacaoRepository
+import com.fiap.inovagab.data.repository.ProjetoRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -13,6 +15,12 @@ import kotlinx.coroutines.launch
 data class OrientacoesListUiState(
     val orientacoes: List<Orientacao> = emptyList(),
     val loading: Boolean = false,
+    val erro: String? = null
+)
+
+data class ProjetosConsultaUiState(
+    val projetos: List<Projeto> = emptyList(),
+    val carregando: Boolean = false,
     val erro: String? = null
 )
 
@@ -30,7 +38,8 @@ data class OrientacaoFormUiState(
 }
 
 class LiderViewModel(
-    private val repository: OrientacaoRepository = OrientacaoRepository()
+    private val repository: OrientacaoRepository = OrientacaoRepository(),
+    private val projetoRepository: ProjetoRepository = ProjetoRepository()
 ) : ViewModel() {
 
     private val _listState = MutableStateFlow(OrientacoesListUiState())
@@ -38,6 +47,30 @@ class LiderViewModel(
 
     private val _formState = MutableStateFlow(OrientacaoFormUiState())
     val formState: StateFlow<OrientacaoFormUiState> = _formState.asStateFlow()
+
+    private val _projetosState = MutableStateFlow(ProjetosConsultaUiState())
+    val projetosState: StateFlow<ProjetosConsultaUiState> = _projetosState.asStateFlow()
+
+    fun consultarProjetos() {
+        _projetosState.update { it.copy(carregando = true, erro = null) }
+        viewModelScope.launch {
+            projetoRepository.listar().fold(
+                onSuccess = { projetos ->
+                    _projetosState.update {
+                        it.copy(carregando = false, projetos = projetos, erro = null)
+                    }
+                },
+                onFailure = { erro ->
+                    _projetosState.update {
+                        it.copy(
+                            carregando = false,
+                            erro = erro.message ?: "Não foi possível consultar os projetos."
+                        )
+                    }
+                }
+            )
+        }
+    }
 
     fun carregarOrientacoes() {
         _listState.update { it.copy(loading = true, erro = null) }
