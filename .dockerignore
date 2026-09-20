@@ -1,0 +1,14 @@
+**/.git
+**/.vs
+**/.idea
+**/bin
+**/obj
+**/node_modules
+**/.env
+**/local.properties
+**/deliverables
+app/build
+.gradle
+*.user
+*.suo
+tests/**/TestResults

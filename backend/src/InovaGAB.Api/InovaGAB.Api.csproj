@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" />
+    <PackageReference Include="Swashbuckle.AspNetCore" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\InovaGAB.Application\InovaGAB.Application.csproj" />
+    <ProjectReference Include="..\InovaGAB.Infrastructure\InovaGAB.Infrastructure.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="..\..\..\docs\sprint2\openapi.yaml" Link="openapi-contract.yaml" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

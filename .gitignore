@@ -11,3 +11,9 @@ build/
 local.properties
 *.apk
 *.aab
+
+# Backend / ambiente Sprint 2
+.env
+**/bin/
+**/obj/
+TestResults/
