@@ -3,6 +3,9 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 
+val debugApiBaseUrl = providers.gradleProperty("apiBaseUrl")
+    .orElse("http://10.0.2.2:8080/")
+
 android {
     namespace = "com.fiap.inovagab"
     compileSdk = 34
@@ -27,7 +30,7 @@ android {
             buildConfigField(
                 "String",
                 "API_BASE_URL",
-                "\"http://10.0.2.2:8080/\""
+                "\"${debugApiBaseUrl.get()}\""
             )
         }
         release {
