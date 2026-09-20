@@ -20,7 +20,7 @@ API **.NET 8** com **EF Core + MongoDB** (`MongoDB.EntityFrameworkCore` 8.4.4), 
 | `MongoDB.EntityFrameworkCore` | 8.4.4 |
 | `MongoDB.Driver` | 3.11.2 |
 | Imagem MongoDB (Compose) | `mongo:7.0.24` |
-| Runtime/SDK Docker API | `8.0.401` / `8.0.21` |
+| Runtime/SDK Docker API | `8.0.425` / `8.0.21` |
 
 Lock files: `packages.lock.json` em cada projeto (CPM em `/Directory.Packages.props`).
 
@@ -99,3 +99,45 @@ docker compose up -d --build
 ```
 
 Rede interna: host Mongo `mongo:27017`, replica set `rs0`. API: `http://api:8080` entre containers; host `http://127.0.0.1:8080`.
+
+PowerShell (raiz do repo): `.\scripts\dev-up.ps1` · `.\scripts\test-backend.ps1`
+
+## Host sem Docker
+
+1. MongoDB acessível (replica set ou `directConnection=true` em nó único).
+2. Exportar `Mongo__ConnectionString`, `Mongo__DatabaseName`, `Jwt__Secret` (ou usar `.env` + `dotnet user-secrets` conforme ambiente).
+3. `cd backend && dotnet run --project src/InovaGAB.Api`
+
+## EF / Mongo — uso efetivo
+
+- Entidades mapeadas em `InovaGabDbContext`; CRUD via EF, agregações de relatório em `RelatorioRepository`.
+- **Não** há `dotnet ef migrations` SQL.
+- Seed: `DevDataSeeder` quando `Seed__Enabled=true` (desligado em Production).
+- Limites: paginação até 100 itens; rate limit login/IA; tamanhos de texto validados nos DTOs.
+
+## Seed vs Firebase (Sprint 1)
+
+O backend **não** lê Firebase. Contas demo são criadas apenas no Mongo (`operador1@inovagab.local`, etc.). Senhas ficam em `DEV_PASSWORD_*` no `.env` gerado por `scripts/setup-dev.sh`.
+
+## Testes
+
+```bash
+# Na raiz do monorepo
+bash scripts/test-backend.sh       # Compose profile tests
+dotnet test tests/InovaGAB.UnitTests
+bash scripts/test-ia-external.sh   # exit 2 sem AI_API_KEY (esperado)
+```
+
+## Documentação de API
+
+- Tabela de rotas: `docs/sprint2/ENDPOINTS.md`
+- OpenAPI: `docs/sprint2/openapi.yaml` · export runtime: `scripts/export-openapi.sh`
+
+## Troubleshooting
+
+| Sintoma | Verificação |
+|---------|-------------|
+| Build Docker lento / SDK | Imagem build usa SDK **8.0.425** (alinhado a `global.json`) |
+| Ready 503 | Replica set não iniciado — rodar `mongo-init` ou `infra/mongo/init-replica-set.sh` |
+| 409 em DELETE | Enviar header `If-Match` com versão da entidade |
+| IA 503 | `AI_ENABLED`/`AI_API_KEY`; ver `docs/sprint2/IA_GEMINI.md` |
