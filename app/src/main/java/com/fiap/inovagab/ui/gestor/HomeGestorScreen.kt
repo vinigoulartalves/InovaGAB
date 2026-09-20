@@ -21,7 +21,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.fiap.inovagab.core.session.SessionManager
+import com.fiap.inovagab.core.session.AppSession
 import com.fiap.inovagab.core.ui.components.AppButton
 import com.fiap.inovagab.core.ui.components.HomeMenuButton
 
@@ -34,7 +34,7 @@ fun HomeGestorScreen(
     onRanking: () -> Unit = {},
     onLogout: () -> Unit = {}
 ) {
-    val usuario by SessionManager.currentUser.collectAsState()
+    val usuario by AppSession.manager.currentUser.collectAsState()
     val nome = usuario?.nome.orEmpty()
 
     Column(

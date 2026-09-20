@@ -54,7 +54,7 @@ builder.Services.AddSwaggerGen(c =>
     {
         Title = "InovaGAB API",
         Version = "v1",
-        Description = "Sprint 2 — autenticação implementada (etapa 3). JWT emitido permanece válido até expirar; logout revoga apenas refresh."
+        Description = "Sprint 2 — auth, estratégias, ideias, projetos, relatórios, ranking e análises IA (Gemini opcional). Ver docs/sprint2/ENDPOINTS.md e openapi.yaml."
     });
     c.AddSecurityDefinition("bearerAuth", new OpenApiSecurityScheme
     {

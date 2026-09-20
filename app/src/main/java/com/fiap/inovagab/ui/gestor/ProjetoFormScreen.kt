@@ -14,6 +14,9 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -29,8 +32,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.Box
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.platform.testTag
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
+import com.fiap.inovagab.core.di.inovaViewModel
+import com.fiap.inovagab.core.testing.TestTags
 import com.fiap.inovagab.core.ui.components.AppButton
 import com.fiap.inovagab.core.ui.components.AppTextField
 import com.fiap.inovagab.data.model.StatusProjeto
@@ -38,14 +46,16 @@ import com.fiap.inovagab.data.model.StatusProjeto
 @Composable
 fun ProjetoFormScreen(
     projetoId: String? = null,
+    ideiaConversaoId: String? = null,
     onBack: () -> Unit = {},
     onSucesso: () -> Unit = {},
-    viewModel: GestorViewModel = viewModel()
+    viewModel: GestorViewModel = inovaViewModel()
 ) {
     val state by viewModel.projetoFormState.collectAsStateWithLifecycle()
+    var confirmarExclusao by remember { mutableStateOf(false) }
 
-    LaunchedEffect(projetoId) {
-        viewModel.iniciarFormularioProjeto(projetoId)
+    LaunchedEffect(projetoId, ideiaConversaoId) {
+        viewModel.iniciarFormularioProjeto(projetoId, ideiaConversaoId)
     }
 
     LaunchedEffect(state.concluido) {
@@ -66,7 +76,11 @@ fun ProjetoFormScreen(
             .padding(horizontal = 24.dp, vertical = 24.dp)
     ) {
         Text(
-            text = if (emEdicao) "Editar projeto" else "Novo projeto",
+            text = when {
+                state.modoConversao -> "Converter ideia em projeto"
+                emEdicao -> "Editar projeto"
+                else -> "Novo projeto"
+            },
             color = Color(0xFF002B5C),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold
@@ -111,11 +125,33 @@ fun ProjetoFormScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            AppTextField(
-                value = state.responsavel,
-                onValueChange = viewModel::onProjetoResponsavelChange,
-                label = "Responsável",
-                enabled = !ocupado
+            if (state.bloquearEstrategia) {
+                AppTextField(
+                    value = state.estrategiaTitulo,
+                    onValueChange = {},
+                    label = "Estratégia de origem (bloqueada)",
+                    enabled = false
+                )
+            } else {
+                EstrategiaProjetoSelector(
+                    estrategias = state.estrategias,
+                    selecionadaId = state.estrategiaId,
+                    onSelecionar = { id, titulo ->
+                        viewModel.onProjetoEstrategiaChange(id, titulo)
+                    },
+                    enabled = !ocupado,
+                    modifier = Modifier.testTag(TestTags.PROJETO_FORM_ESTRATEGIA)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            ResponsavelProjetoSelector(
+                responsaveis = state.responsaveis,
+                selecionadoId = state.responsavelId,
+                onSelecionar = { id, nome -> viewModel.onProjetoResponsavelIdChange(id, nome) },
+                enabled = !ocupado,
+                modifier = Modifier.testTag(TestTags.PROJETO_FORM_RESPONSAVEL)
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -180,7 +216,7 @@ fun ProjetoFormScreen(
             AppTextField(
                 value = state.prazo,
                 onValueChange = viewModel::onProjetoPrazoChange,
-                label = "Prazo (ex.: 31/12/2026)",
+                label = "Prazo (AAAA-MM-DD)",
                 enabled = !ocupado
             )
 
@@ -196,11 +232,29 @@ fun ProjetoFormScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             AppButton(
-                text = if (emEdicao) "Salvar alterações" else "Cadastrar projeto",
+                text = when {
+                    state.modoConversao -> "Confirmar conversão"
+                    emEdicao -> "Salvar alterações"
+                    else -> "Cadastrar projeto"
+                },
                 onClick = viewModel::salvarProjeto,
                 loading = state.salvando,
-                enabled = !ocupado
+                enabled = !ocupado,
+                modifier = Modifier.testTag(TestTags.PROJETO_FORM_SALVAR)
             )
+
+            if (emEdicao) {
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedButton(
+                    onClick = { confirmarExclusao = true },
+                    enabled = !ocupado && !state.excluindo,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag(TestTags.PROJETO_FORM_EXCLUIR)
+                ) {
+                    Text(text = "Excluir projeto")
+                }
+            }
         }
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -219,6 +273,83 @@ fun ProjetoFormScreen(
         }
 
         Spacer(modifier = Modifier.height(16.dp))
+    }
+
+    if (confirmarExclusao) {
+        AlertDialog(
+            onDismissRequest = { confirmarExclusao = false },
+            title = { Text(text = "Excluir projeto?") },
+            text = { Text(text = "Exclusão lógica com confirmação. Conflitos de versão exibirão erro 409.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmarExclusao = false
+                    viewModel.excluirProjeto()
+                }) {
+                    Text(text = "Excluir")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmarExclusao = false }) {
+                    Text(text = "Cancelar")
+                }
+            }
+        )
+    }
+}
+
+@Composable
+private fun EstrategiaProjetoSelector(
+    estrategias: List<com.fiap.inovagab.data.model.Orientacao>,
+    selecionadaId: String,
+    onSelecionar: (String, String) -> Unit,
+    enabled: Boolean,
+    modifier: Modifier = Modifier
+) {
+    var aberto by remember { mutableStateOf(false) }
+    val label = estrategias.find { it.id == selecionadaId }?.titulo ?: "Selecione a estratégia"
+    Box(modifier = modifier.fillMaxWidth()) {
+        OutlinedButton(onClick = { aberto = true }, enabled = enabled && estrategias.isNotEmpty()) {
+            Text(text = "Estratégia: $label")
+        }
+        DropdownMenu(expanded = aberto, onDismissRequest = { aberto = false }) {
+            estrategias.filter { it.selecionavelParaNovoVinculo }.forEach { e ->
+                DropdownMenuItem(
+                    text = { Text(e.titulo) },
+                    onClick = {
+                        aberto = false
+                        onSelecionar(e.id, e.titulo)
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ResponsavelProjetoSelector(
+    responsaveis: List<com.fiap.inovagab.data.remote.dto.ResponsavelResumoDto>,
+    selecionadoId: String,
+    onSelecionar: (String, String) -> Unit,
+    enabled: Boolean,
+    modifier: Modifier = Modifier
+) {
+    var aberto by remember { mutableStateOf(false) }
+    val label = responsaveis.find { it.id == selecionadoId }?.nome ?: "Selecione o responsável"
+    Box(modifier = modifier.fillMaxWidth()) {
+        OutlinedButton(onClick = { aberto = true }, enabled = enabled && responsaveis.isNotEmpty()) {
+            Text(text = "Responsável: $label")
+        }
+        DropdownMenu(expanded = aberto, onDismissRequest = { aberto = false }) {
+            responsaveis.forEach { r ->
+                DropdownMenuItem(
+                    text = { Text(r.nome) },
+                    onClick = {
+                        aberto = false
+                        onSelecionar(r.id, r.nome)
+                    }
+                )
+            }
+        }
     }
 }
 

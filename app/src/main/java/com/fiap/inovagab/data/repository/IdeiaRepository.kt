@@ -1,106 +1,138 @@
 package com.fiap.inovagab.data.repository
 
+import com.fiap.inovagab.core.network.ApiCallRunner
 import com.fiap.inovagab.data.model.Ideia
+import com.fiap.inovagab.data.model.Orientacao
 import com.fiap.inovagab.data.model.PrioridadeIdeia
+import com.fiap.inovagab.data.model.Projeto
 import com.fiap.inovagab.data.model.StatusIdeia
-import com.google.firebase.firestore.FieldValue
-import com.google.firebase.firestore.FirebaseFirestore
-import kotlinx.coroutines.tasks.await
+import com.fiap.inovagab.data.remote.api.EstrategiasApi
+import com.fiap.inovagab.data.remote.api.IdeiasApi
+import com.fiap.inovagab.data.remote.dto.ConversaoIdeiaProjetoRequestDto
+import com.fiap.inovagab.data.remote.dto.IdeiaAvaliacaoRequestDto
+import com.fiap.inovagab.data.remote.dto.IdeiaCreateRequestDto
+import com.fiap.inovagab.data.remote.dto.IdeiaUpdateRequestDto
+import com.fiap.inovagab.data.remote.fetchAllPages
+import com.fiap.inovagab.data.remote.toIdeia
+import com.fiap.inovagab.data.remote.toMoneyBigDecimal
+import com.fiap.inovagab.data.remote.toOrientacao
+import com.fiap.inovagab.data.remote.toProjeto
 
 class IdeiaRepository(
-    private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
+    private val ideiasApi: IdeiasApi,
+    private val estrategiasApi: EstrategiasApi
 ) {
 
-    private val ideiasCollection = firestore.collection("ideias")
-    private val usersCollection = firestore.collection("users")
-
-    suspend fun listarTodas(): Result<List<Ideia>> = runCatching {
-        val snap = ideiasCollection.get().await()
-        snap.documents
-            .mapNotNull { doc -> doc.toObject(Ideia::class.java)?.copy(id = doc.id) }
-            .sortedByDescending { it.criadoEm }
+    suspend fun listarTodas(): Result<List<Ideia>> = ApiCallRunner.run {
+        fetchAllPages { page, size -> ideiasApi.list(page, size) }
+            .map { it.toIdeia() }
     }
 
-    suspend fun listarPorAutor(autorId: String): Result<List<Ideia>> = runCatching {
-        require(autorId.isNotBlank()) { "ID do autor é obrigatório." }
-        val snap = ideiasCollection
-            .whereEqualTo("autorId", autorId)
-            .get()
-            .await()
-        snap.documents
-            .mapNotNull { doc -> doc.toObject(Ideia::class.java)?.copy(id = doc.id) }
-            .sortedByDescending { it.criadoEm }
+    suspend fun listarPorAutor(autorId: String): Result<List<Ideia>> = ApiCallRunner.run {
+        fetchAllPages { page, size -> ideiasApi.list(page, size, autorId = autorId) }
+            .map { it.toIdeia() }
     }
 
-    suspend fun criar(ideia: Ideia): Result<String> = runCatching {
-        require(ideia.autorId.isNotBlank()) { "ID do autor é obrigatório para criar a ideia." }
+    suspend fun buscarPorId(id: String): Result<Ideia?> = ApiCallRunner.run {
+        ideiasApi.get(id).toIdeia()
+    }
 
-        val dados = mapOf(
-            "titulo" to ideia.titulo,
-            "descricao" to ideia.descricao,
-            "area" to ideia.area,
-            "autorId" to ideia.autorId,
-            "autorNome" to ideia.autorNome,
-            "status" to (ideia.status.name.ifBlank { StatusIdeia.ENVIADA.name }),
-            "prioridade" to (ideia.prioridade.name.ifBlank { PrioridadeIdeia.MEDIA.name }),
-            "criadoEm" to ideia.criadoEm
+    suspend fun listarEstrategiasVigentes(): Result<List<Orientacao>> = ApiCallRunner.run {
+        fetchAllPages { page, size -> estrategiasApi.list(page, size, vigente = true) }
+            .map { it.toOrientacao() }
+            .filter { it.selecionavelParaNovoVinculo }
+    }
+
+    suspend fun criar(ideia: Ideia): Result<String> = ApiCallRunner.run {
+        val estrategiaId = ideia.estrategiaId.ifBlank { resolverEstrategiaVigente() }
+        val detalhe = ideiasApi.create(
+            IdeiaCreateRequestDto(
+                titulo = ideia.titulo,
+                descricao = ideia.descricao,
+                area = ideia.area,
+                estrategiaId = estrategiaId
+            )
         )
-
-        val ref = ideiasCollection.add(dados).await()
-
-        runCatching {
-            usersCollection.document(ideia.autorId)
-                .update("pontos", FieldValue.increment(PONTOS_POR_IDEIA))
-                .await()
-        }
-
-        ref.id
+        detalhe.id
     }
 
-    suspend fun atualizarStatus(ideiaId: String, status: StatusIdeia): Result<Unit> = runCatching {
-        require(ideiaId.isNotBlank()) { "ID da ideia é obrigatório." }
-        ideiasCollection.document(ideiaId).update("status", status.name).await()
+    suspend fun atualizar(ideia: Ideia): Result<Unit> = ApiCallRunner.run {
+        ideiasApi.update(
+            ideia.id,
+            IdeiaUpdateRequestDto(
+                versao = ideia.versao,
+                titulo = ideia.titulo,
+                descricao = ideia.descricao,
+                area = ideia.area
+            )
+        )
+        Unit
+    }
+
+    suspend fun excluir(ideia: Ideia): Result<Unit> = ApiCallRunner.run {
+        ideiasApi.delete(ideia.id, "W/\"${ideia.versao}\"")
         Unit
     }
 
     suspend fun atualizarPrioridade(
-        ideiaId: String,
-        prioridade: PrioridadeIdeia
-    ): Result<Unit> = runCatching {
-        require(ideiaId.isNotBlank()) { "ID da ideia é obrigatório." }
-        ideiasCollection.document(ideiaId).update("prioridade", prioridade.name).await()
-        Unit
-    }
-
-    /**
-     * Atualiza o status de uma ideia e, quando o novo status for [StatusIdeia.APROVADA] e a
-     * ideia ainda não estiver aprovada, soma [PONTOS_POR_APROVACAO] pontos ao autor.
-     * Isso evita pontuar novamente caso a ideia já estivesse aprovada.
-     */
-    suspend fun atualizarStatusComPontuacao(
         ideia: Ideia,
-        novoStatus: StatusIdeia
-    ): Result<Unit> = runCatching {
-        require(ideia.id.isNotBlank()) { "ID da ideia é obrigatório." }
+        prioridade: PrioridadeIdeia,
+        justificativa: String? = null
+    ): Result<Unit> = avaliar(ideia, ideia.status, prioridade, justificativa)
 
-        ideiasCollection.document(ideia.id).update("status", novoStatus.name).await()
+    suspend fun atualizarStatus(ideia: Ideia, status: StatusIdeia): Result<Unit> =
+        avaliar(ideia, status, ideia.prioridade)
 
-        val deveSomarPontos = novoStatus == StatusIdeia.APROVADA &&
-            ideia.status != StatusIdeia.APROVADA &&
-            ideia.autorId.isNotBlank()
+    suspend fun atualizarStatusComPontuacao(ideia: Ideia, novoStatus: StatusIdeia): Result<Unit> =
+        avaliar(ideia, novoStatus, ideia.prioridade)
 
-        if (deveSomarPontos) {
-            runCatching {
-                usersCollection.document(ideia.autorId)
-                    .update("pontos", FieldValue.increment(PONTOS_POR_APROVACAO))
-                    .await()
-            }
-        }
+    suspend fun aplicarPrioridadeSugerida(
+        ideia: Ideia,
+        prioridade: PrioridadeIdeia,
+        justificativa: String
+    ): Result<Unit> = avaliar(ideia, ideia.status, prioridade, justificativa)
+
+    suspend fun converterEmProjeto(ideia: Ideia, projeto: Projeto): Result<String> = ApiCallRunner.run {
+        val detalhe = ideiasApi.converterEmProjeto(
+            ideia.id,
+            ConversaoIdeiaProjetoRequestDto(
+                versao = ideia.versao,
+                nome = projeto.nome,
+                descricao = projeto.descricao,
+                responsavelId = projeto.responsavelId,
+                etapa = projeto.etapa,
+                status = projeto.status.name,
+                investimento = projeto.investimento.toMoneyBigDecimal(),
+                retornoFinanceiro = projeto.retornoFinanceiro.toMoneyBigDecimal(),
+                reducaoCustos = projeto.reducaoCustos.toMoneyBigDecimal(),
+                ganhoProdutividade = projeto.ganhoProdutividade.toMoneyBigDecimal(),
+                prazo = projeto.prazo
+            )
+        )
+        detalhe.id
+    }
+
+    private suspend fun avaliar(
+        ideia: Ideia,
+        status: StatusIdeia,
+        prioridade: PrioridadeIdeia,
+        justificativa: String? = null
+    ): Result<Unit> = ApiCallRunner.run {
+        ideiasApi.avaliar(
+            ideia.id,
+            IdeiaAvaliacaoRequestDto(
+                versao = ideia.versao,
+                status = status.name,
+                prioridade = prioridade.name,
+                justificativa = justificativa
+            )
+        )
         Unit
     }
 
-    companion object {
-        const val PONTOS_POR_IDEIA: Long = 10
-        const val PONTOS_POR_APROVACAO: Long = 30
+    suspend fun resolverEstrategiaVigente(): String {
+        val page = estrategiasApi.list(page = 1, pageSize = 1, vigente = true)
+        return page.items.firstOrNull()?.id
+            ?: error("Nenhuma estratégia vigente disponível.")
     }
 }

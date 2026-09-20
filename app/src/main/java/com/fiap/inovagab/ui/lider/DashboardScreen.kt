@@ -12,34 +12,52 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.fiap.inovagab.core.session.SessionManager
+import com.fiap.inovagab.core.di.inovaViewModel
+import com.fiap.inovagab.core.session.AppSession
+import com.fiap.inovagab.core.testing.TestTags
+import com.fiap.inovagab.core.ui.charts.GraficoDistribuicaoStatus
+import com.fiap.inovagab.core.ui.charts.GraficoInvestimentoRetorno
+import com.fiap.inovagab.core.ui.components.AppButton
 import com.fiap.inovagab.core.ui.components.AppCard
+import com.fiap.inovagab.core.ui.components.AppTextField
 import com.fiap.inovagab.core.ui.effects.OnResumeEffect
+import com.fiap.inovagab.core.ui.format.formatarMoedaPtBr
+import com.fiap.inovagab.core.ui.format.formatarPercentualOpcionalPtBr
+import com.fiap.inovagab.core.ui.format.formatarRoiPtBr
+import com.fiap.inovagab.data.model.DashboardReport
 import com.fiap.inovagab.data.model.Perfil
-import java.text.NumberFormat
-import java.util.Locale
 
 @Composable
 fun DashboardScreen(
     onBack: () -> Unit = {},
-    viewModel: LiderViewModel = viewModel()
+    viewModel: LiderViewModel = inovaViewModel()
 ) {
-    val usuario by SessionManager.currentUser.collectAsState()
+    val usuario by AppSession.manager.currentUser.collectAsState()
     val perfil = usuario?.perfil
     val state by viewModel.dashboardState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(Unit) {
+        viewModel.carregarOpcoesDashboard()
+    }
 
     OnResumeEffect {
         if (perfil == Perfil.LIDER) {
@@ -64,48 +82,66 @@ fun DashboardScreen(
         Spacer(modifier = Modifier.height(4.dp))
 
         Text(
-            text = "Visão consolidada dos projetos cadastrados.",
+            text = "Relatórios consolidados do backend com filtros por estratégia, projeto e período.",
             color = Color(0xFF4A5A6E),
             style = MaterialTheme.typography.bodyMedium
         )
 
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
         when {
             perfil != null && perfil != Perfil.LIDER -> {
                 AcessoRestritoCard()
             }
 
-            state.carregando -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(180.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(color = Color(0xFF002B5C))
-                }
-            }
+            else -> {
+                FiltrosDashboard(state = state, viewModel = viewModel)
 
-            state.erro != null -> {
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = state.erro ?: "",
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    OutlinedButton(onClick = { viewModel.carregarDashboard() }) {
-                        Text(text = "Tentar novamente")
+                Spacer(modifier = Modifier.height(16.dp))
+
+                when {
+                    state.carregando -> {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(180.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(color = Color(0xFF002B5C))
+                        }
+                    }
+
+                    state.erro != null -> {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = state.erro ?: "",
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            OutlinedButton(onClick = { viewModel.carregarDashboard() }) {
+                                Text(text = "Tentar novamente")
+                            }
+                        }
+                    }
+
+                    state.vazio && state.report != null -> {
+                        AppCard {
+                            Text(
+                                text = "Nenhum dado para os filtros selecionados.",
+                                color = Color(0xFF4A5A6E),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    }
+
+                    state.report != null -> {
+                        DashboardConteudo(report = state.report!!)
                     }
                 }
-            }
-
-            else -> {
-                DashboardCards(state = state)
             }
         }
 
@@ -123,41 +159,142 @@ fun DashboardScreen(
 }
 
 @Composable
-private fun DashboardCards(state: DashboardUiState) {
+private fun FiltrosDashboard(state: DashboardUiState, viewModel: LiderViewModel) {
+    AppCard {
+        Text(
+            text = "Filtros",
+            color = Color(0xFF002B5C),
+            fontWeight = FontWeight.SemiBold,
+            style = MaterialTheme.typography.titleMedium
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+
+        FiltroDropdown(
+            label = "Estratégia",
+            opcoes = listOf(null to "Todas") + state.estrategiasOpcoes.map { it.id to it.titulo },
+            selecionado = state.filtros.estrategiaId,
+            onSelecionar = viewModel::onFiltroEstrategiaChange,
+            testTag = TestTags.DASHBOARD_FILTRO_ESTRATEGIA
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        FiltroDropdown(
+            label = "Projeto",
+            opcoes = listOf(null to "Todos") + state.projetosOpcoes.map { it.id to it.nome },
+            selecionado = state.filtros.projetoId,
+            onSelecionar = viewModel::onFiltroProjetoChange,
+            testTag = TestTags.DASHBOARD_FILTRO_PROJETO
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        AppTextField(
+            value = state.filtros.inicio ?: "",
+            onValueChange = viewModel::onFiltroInicioChange,
+            label = "Criação a partir de (AAAA-MM-DD)",
+            modifier = Modifier.testTag(TestTags.DASHBOARD_FILTRO_INICIO)
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        AppTextField(
+            value = state.filtros.fim ?: "",
+            onValueChange = viewModel::onFiltroFimChange,
+            label = "Criação até (AAAA-MM-DD)",
+            modifier = Modifier.testTag(TestTags.DASHBOARD_FILTRO_FIM)
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        AppButton(
+            text = "Aplicar filtros",
+            onClick = { viewModel.carregarDashboard() },
+            modifier = Modifier.testTag(TestTags.DASHBOARD_APLICAR_FILTROS)
+        )
+    }
+}
+
+@Composable
+private fun FiltroDropdown(
+    label: String,
+    opcoes: List<Pair<String?, String>>,
+    selecionado: String?,
+    onSelecionar: (String?) -> Unit,
+    testTag: String
+) {
+    var aberto by remember { mutableStateOf(false) }
+    val textoAtual = opcoes.find { it.first == selecionado }?.second ?: label
+
+    Box(modifier = Modifier.testTag(testTag)) {
+        OutlinedButton(onClick = { aberto = true }, modifier = Modifier.fillMaxWidth()) {
+            Text(text = "$label: $textoAtual")
+        }
+        DropdownMenu(expanded = aberto, onDismissRequest = { aberto = false }) {
+            opcoes.forEach { (id, nome) ->
+                DropdownMenuItem(
+                    text = { Text(nome) },
+                    onClick = {
+                        aberto = false
+                        onSelecionar(id)
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DashboardConteudo(report: DashboardReport) {
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
+        IndicadorCard("Total de projetos", report.totalProjetos.toString())
+        IndicadorCard("Investimento total", formatarMoedaPtBr(report.investimentoTotal))
+        IndicadorCard("Retorno total", formatarMoedaPtBr(report.retornoTotal))
         IndicadorCard(
-            titulo = "Total de projetos",
-            valor = state.totalProjetos.toString()
+            "Lucro obtido",
+            formatarMoedaPtBr(report.lucroObtido),
+            if (report.lucroObtido >= 0) Color(0xFF1B5E20) else Color(0xFFB71C1C)
         )
         IndicadorCard(
-            titulo = "Investimento total",
-            valor = formatarMoeda(state.investimentoTotal)
+            "ROI geral",
+            formatarRoiPtBr(report.roiGeral),
+            if ((report.roiGeral ?: 0.0) >= 0) Color(0xFF1B5E20) else Color(0xFFB71C1C)
         )
+        IndicadorCard("Redução de custos", formatarMoedaPtBr(report.reducaoCustosTotal))
         IndicadorCard(
-            titulo = "Retorno total",
-            valor = formatarMoeda(state.retornoTotal)
+            "Ganho médio de produtividade",
+            formatarPercentualOpcionalPtBr(report.ganhoProdutividadeMedio)
         )
-        IndicadorCard(
-            titulo = "Lucro obtido",
-            valor = formatarMoeda(state.lucroObtido),
-            corValor = if (state.lucroObtido >= 0) Color(0xFF1B5E20) else Color(0xFFB71C1C)
-        )
-        IndicadorCard(
-            titulo = "ROI geral",
-            valor = formatarPercentual(state.roiGeral),
-            corValor = if (state.roiGeral >= 0) Color(0xFF1B5E20) else Color(0xFFB71C1C)
-        )
-        IndicadorCard(
-            titulo = "Redução de custos",
-            valor = formatarMoeda(state.reducaoCustosTotal)
-        )
-        IndicadorCard(
-            titulo = "Ganho médio de produtividade",
-            valor = formatarPercentual(state.ganhoProdutividadeMedio)
-        )
+        IndicadorCard("Projetos atrasados", report.projetosAtrasados.toString())
+
+        AppCard {
+            Text(
+                text = "Investimento x retorno por estratégia",
+                color = Color(0xFF002B5C),
+                fontWeight = FontWeight.SemiBold,
+                style = MaterialTheme.typography.titleMedium
+            )
+            GraficoInvestimentoRetorno(
+                series = report.investimentoRetornoPorEstrategia,
+                modifier = Modifier.testTag(TestTags.DASHBOARD_GRAFICO_INVEST_RETORNO)
+            )
+        }
+
+        AppCard {
+            Text(
+                text = "Distribuição por status",
+                color = Color(0xFF002B5C),
+                fontWeight = FontWeight.SemiBold,
+                style = MaterialTheme.typography.titleMedium
+            )
+            GraficoDistribuicaoStatus(
+                distribuicao = report.distribuicaoPorStatus,
+                modifier = Modifier.testTag(TestTags.DASHBOARD_GRAFICO_STATUS)
+            )
+        }
     }
 }
 
@@ -199,16 +336,4 @@ private fun AcessoRestritoCard() {
             style = MaterialTheme.typography.bodyMedium
         )
     }
-}
-
-private fun formatarMoeda(valor: Double): String {
-    val formato = NumberFormat.getCurrencyInstance(Locale("pt", "BR"))
-    return formato.format(valor)
-}
-
-private fun formatarPercentual(valor: Double): String {
-    val formato = NumberFormat.getNumberInstance(Locale("pt", "BR"))
-    formato.maximumFractionDigits = 2
-    formato.minimumFractionDigits = 0
-    return "${formato.format(valor)}%"
 }

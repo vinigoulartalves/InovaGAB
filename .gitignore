@@ -17,3 +17,7 @@ local.properties
 **/bin/
 **/obj/
 TestResults/
+artifacts/
+deliverables/InovaGAB_Backend_Sprint2.zip
+deliverables/InovaGAB_Android_Sprint2.zip
+docs/sprint2/openapi-runtime.json

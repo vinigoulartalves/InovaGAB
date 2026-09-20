@@ -28,7 +28,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
+import com.fiap.inovagab.core.di.inovaViewModel
 import com.fiap.inovagab.core.ui.components.AppButton
 import com.fiap.inovagab.core.ui.components.AppTextField
 import com.fiap.inovagab.data.model.Perfil
@@ -36,7 +36,7 @@ import com.fiap.inovagab.data.model.Perfil
 @Composable
 fun LoginScreen(
     onLoginSucesso: (Perfil) -> Unit = {},
-    viewModel: LoginViewModel = viewModel()
+    viewModel: LoginViewModel = inovaViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 

@@ -13,20 +13,27 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
+import com.fiap.inovagab.core.di.inovaViewModel
+import com.fiap.inovagab.core.testing.TestTags
 import com.fiap.inovagab.core.ui.components.AppCard
 import com.fiap.inovagab.core.ui.effects.OnResumeEffect
 import com.fiap.inovagab.data.model.Ideia
@@ -36,9 +43,11 @@ import com.fiap.inovagab.data.model.StatusIdeia
 @Composable
 fun MinhasIdeiasScreen(
     onBack: () -> Unit = {},
-    viewModel: OperadorViewModel = viewModel()
+    onEditar: (String) -> Unit = {},
+    viewModel: OperadorViewModel = inovaViewModel()
 ) {
     val state by viewModel.listState.collectAsStateWithLifecycle()
+    var ideiaParaExcluir by remember { mutableStateOf<Ideia?>(null) }
 
     OnResumeEffect {
         viewModel.carregarMinhasIdeias()
@@ -60,7 +69,7 @@ fun MinhasIdeiasScreen(
         Spacer(modifier = Modifier.height(4.dp))
 
         Text(
-            text = "Acompanhe o status das ideias que você cadastrou.",
+            text = "Acompanhe o status e edite ou exclua ideias enviadas.",
             color = Color(0xFF4A5A6E),
             style = MaterialTheme.typography.bodyMedium
         )
@@ -115,6 +124,14 @@ fun MinhasIdeiasScreen(
             }
 
             else -> {
+                if (state.mensagem != null) {
+                    Text(
+                        text = state.mensagem ?: "",
+                        color = Color(0xFF1B7F3B),
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                }
                 if (state.erro != null) {
                     Text(
                         text = state.erro ?: "",
@@ -128,9 +145,14 @@ fun MinhasIdeiasScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f)
+                        .testTag(TestTags.MINHAS_IDEIAS_LISTA)
                 ) {
                     items(state.ideias, key = { it.id }) { ideia ->
-                        IdeiaCard(ideia = ideia)
+                        IdeiaCard(
+                            ideia = ideia,
+                            onEditar = { onEditar(ideia.id) },
+                            onExcluir = { ideiaParaExcluir = ideia }
+                        )
                     }
                 }
             }
@@ -147,10 +169,44 @@ fun MinhasIdeiasScreen(
             Text(text = "Voltar")
         }
     }
+
+    if (ideiaParaExcluir != null) {
+        AlertDialog(
+            onDismissRequest = { ideiaParaExcluir = null },
+            title = { Text(text = "Excluir ideia?") },
+            text = {
+                Text(
+                    text = "Esta ação não pode ser desfeita. Se outro usuário alterou a ideia, você verá um aviso de conflito."
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.excluirIdeia(ideiaParaExcluir!!)
+                        ideiaParaExcluir = null
+                    },
+                    modifier = Modifier.testTag(TestTags.MINHAS_IDEIAS_EXCLUIR)
+                ) {
+                    Text(text = "Excluir")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { ideiaParaExcluir = null }) {
+                    Text(text = "Cancelar")
+                }
+            }
+        )
+    }
 }
 
 @Composable
-private fun IdeiaCard(ideia: Ideia) {
+private fun IdeiaCard(
+    ideia: Ideia,
+    onEditar: () -> Unit,
+    onExcluir: () -> Unit
+) {
+    val editavel = ideia.status == StatusIdeia.ENVIADA
+
     AppCard {
         Text(
             text = ideia.titulo,
@@ -179,6 +235,21 @@ private fun IdeiaCard(ideia: Ideia) {
                 texto = "Prioridade: ${formatarPrioridade(ideia.prioridade)}",
                 cor = corDaPrioridade(ideia.prioridade)
             )
+        }
+
+        if (editavel) {
+            Spacer(modifier = Modifier.height(10.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(
+                    onClick = onEditar,
+                    modifier = Modifier.testTag(TestTags.MINHAS_IDEIAS_EDITAR)
+                ) {
+                    Text(text = "Editar")
+                }
+                OutlinedButton(onClick = onExcluir) {
+                    Text(text = "Excluir")
+                }
+            }
         }
     }
 }
