@@ -17,11 +17,13 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.fiap.inovagab.core.session.AppSession
+import com.fiap.inovagab.core.testing.TestTags
 import com.fiap.inovagab.core.ui.components.AppButton
 import com.fiap.inovagab.core.ui.components.HomeMenuButton
 
@@ -42,7 +44,8 @@ fun HomeGestorScreen(
             .fillMaxSize()
             .background(Color(0xFFF5F7FA))
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp, vertical = 32.dp),
+            .padding(horizontal = 24.dp, vertical = 32.dp)
+            .testTag(TestTags.HOME_GESTOR),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(

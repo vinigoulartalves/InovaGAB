@@ -21,6 +21,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -31,6 +32,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.fiap.inovagab.core.di.inovaViewModel
 import com.fiap.inovagab.core.ui.components.AppButton
 import com.fiap.inovagab.core.ui.components.AppTextField
+import com.fiap.inovagab.core.testing.TestTags
 import com.fiap.inovagab.data.model.Perfil
 
 @Composable
@@ -111,7 +113,8 @@ fun LoginScreen(
                         value = state.email,
                         onValueChange = viewModel::onEmailChange,
                         label = "E-mail corporativo",
-                        enabled = !state.loading
+                        enabled = !state.loading,
+                        modifier = Modifier.testTag(TestTags.LOGIN_EMAIL)
                     )
 
                     AppTextField(
@@ -119,14 +122,16 @@ fun LoginScreen(
                         onValueChange = viewModel::onSenhaChange,
                         label = "Senha",
                         isPassword = true,
-                        enabled = !state.loading
+                        enabled = !state.loading,
+                        modifier = Modifier.testTag(TestTags.LOGIN_SENHA)
                     )
 
                     if (state.erro != null) {
                         Text(
                             text = state.erro ?: "",
                             color = MaterialTheme.colorScheme.error,
-                            fontSize = 13.sp
+                            fontSize = 13.sp,
+                            modifier = Modifier.testTag(TestTags.LOGIN_ERRO)
                         )
                     }
 
@@ -135,7 +140,8 @@ fun LoginScreen(
                     AppButton(
                         text = "Entrar",
                         onClick = viewModel::onLoginClick,
-                        loading = state.loading
+                        loading = state.loading,
+                        modifier = Modifier.testTag(TestTags.LOGIN_ENTRAR)
                     )
 
                     TextButton(

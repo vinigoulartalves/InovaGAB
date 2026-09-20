@@ -36,11 +36,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.fiap.inovagab.core.di.inovaViewModel
+import com.fiap.inovagab.core.testing.TestTags
 import com.fiap.inovagab.core.session.AppSession
 import com.fiap.inovagab.core.ui.components.AppCard
 import com.fiap.inovagab.core.ui.effects.OnResumeEffect
@@ -148,7 +150,9 @@ fun OrientacoesListScreen(
                     }
                     LazyColumn(
                         verticalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .testTag(TestTags.ORIENTACOES_LISTA)
                     ) {
                         items(state.orientacoes, key = { it.id }) { orientacao ->
                             OrientacaoCard(

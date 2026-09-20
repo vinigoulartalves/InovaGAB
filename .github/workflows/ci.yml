@@ -1,4 +1,4 @@
-# CI local/remoto: não implica aprovação manual nem execução bem-sucedida até o workflow rodar no GitHub.
+# CI: falha se testes backend falharem (contagem TRX), não apenas por existir artefato.
 name: CI
 
 on:
@@ -24,19 +24,28 @@ jobs:
         with:
           global-json-file: backend/global.json
 
+      - name: Prepare .env for Compose API (test seed)
+        run: |
+          chmod +x scripts/setup-dev.sh scripts/test-runner-entrypoint.sh scripts/lib/*.sh scripts/lib/*.py
+          bash scripts/setup-dev.sh
+
       - name: Docker Compose — Mongo + test-runner
         run: |
-          chmod +x scripts/test-runner-entrypoint.sh scripts/lib/wait-for-http.sh
           docker compose --profile tests up -d mongo mongo-init
           docker compose --profile tests run --rm test-runner
 
-      - name: Upload test artifacts
+      - name: Upload backend artifacts
         if: always()
         uses: actions/upload-artifact@v4.6.0
         with:
-          name: backend-test-results
-          path: artifacts/test-results/
-          if-no-files-found: ignore
+          name: backend-test-artifacts
+          path: |
+            artifacts/test-results/
+            artifacts/coverage/
+            artifacts/test-summary.json
+            artifacts/test-summary.txt
+            artifacts/test-runner.log
+          if-no-files-found: warn
 
   android:
     name: Android lint, unit tests, assembleDebug
@@ -54,7 +63,7 @@ jobs:
       - name: Gradle
         run: |
           chmod +x gradlew
-          ./gradlew :app:lintDebug :app:testDebugUnitTest :app:assembleDebug --no-daemon
+          ./gradlew :app:lintDebug :app:testDebugUnitTest :app:assembleDebug :app:assembleDebugAndroidTest --no-daemon
 
       - name: Upload APK
         if: always()
@@ -62,4 +71,67 @@ jobs:
         with:
           name: app-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: ignore
+
+  android-journey:
+    name: Android E2E journeys (emulator + API)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    needs: [backend]
+    steps:
+      - uses: actions/checkout@v4.2.2
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4.7.0
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Prepare .env
+        run: bash scripts/setup-dev.sh
+
+      - name: API + Mongo
+        run: |
+          docker compose up -d --build mongo mongo-init api
+          bash scripts/lib/wait-for-http.sh http://127.0.0.1:8080/health/ready 200 180 3
+
+      - name: Run instrumented journeys on emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          profile: pixel_6
+          script: |
+            set -a && source .env && set +a
+            COMMIT="${{ github.sha }}"
+            ./gradlew :app:connectedDebugAndroidTest \
+              -Pandroid.testInstrumentationRunnerArguments.class=com.fiap.inovagab.Sprint2JourneyInstrumentedTest \
+              -Pandroid.testInstrumentationRunnerArguments.gitCommit="$COMMIT" \
+              -Pandroid.testInstrumentationRunnerArguments.apiBaseUrl="http://10.0.2.2:8080/" \
+              -Pandroid.testInstrumentationRunnerArguments.operador1Email="operador1@inovagab.local" \
+              -Pandroid.testInstrumentationRunnerArguments.operador1Password="$DEV_PASSWORD_OPERADOR1" \
+              -Pandroid.testInstrumentationRunnerArguments.gestorEmail="gestor@inovagab.local" \
+              -Pandroid.testInstrumentationRunnerArguments.gestorPassword="$DEV_PASSWORD_GESTOR" \
+              -Pandroid.testInstrumentationRunnerArguments.liderEmail="lider@inovagab.local" \
+              -Pandroid.testInstrumentationRunnerArguments.liderPassword="$DEV_PASSWORD_LIDER" \
+              --no-daemon
+
+      - name: Pull evidence & index
+        if: always()
+        run: |
+          mkdir -p artifacts/android-journey
+          adb exec-out run-as com.fiap.inovagab cat files/sprint2-evidence/${{ github.sha }}/INDEX.json > artifacts/android-journey/INDEX.json 2>/dev/null || true
+          python3 scripts/lib/write-evidence-index.py \
+            --android-dir artifacts/android-journey \
+            --out artifacts/EVIDENCE_INDEX.md \
+            --instrument-exit 0 || true
+
+      - name: Upload Android journey artifacts
+        if: always()
+        uses: actions/upload-artifact@v4.6.0
+        with:
+          name: android-journey-evidence
+          path: |
+            artifacts/android-journey/
+            app/build/reports/androidTests/
           if-no-files-found: ignore
