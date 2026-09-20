@@ -33,7 +33,13 @@ jobs:
       - name: Docker Compose — Mongo + test-runner
         run: |
           docker compose --profile tests up -d mongo mongo-init
+          set +e
           docker compose --profile tests run --rm test-runner
+          TEST_EXIT=$?
+          set -e
+          python3 scripts/lib/parse-trx-results.py artifacts/test-results artifacts/test-summary.json
+          python3 scripts/lib/parse-trx-results.py --check artifacts/test-results
+          exit "$TEST_EXIT"
 
       - name: Upload backend artifacts
         if: always()
