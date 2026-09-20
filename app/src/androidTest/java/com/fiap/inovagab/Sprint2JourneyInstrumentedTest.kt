@@ -10,7 +10,11 @@ import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.uiautomator.By
+import androidx.test.uiautomator.UiDevice
+import androidx.test.uiautomator.Until
 import com.fiap.inovagab.core.testing.TestTags
+import com.fiap.inovagab.data.model.Perfil
 import com.fiap.inovagab.support.EvidenceRecorder
 import org.junit.Assume.assumeTrue
 import org.junit.Before
@@ -77,7 +81,24 @@ class Sprint2JourneyInstrumentedTest {
         composeRule.onNodeWithTag(TestTags.LOGIN_SENHA).performTextClearance()
         composeRule.onNodeWithTag(TestTags.LOGIN_SENHA).performTextInput(password)
         composeRule.onNodeWithTag(TestTags.LOGIN_ENTRAR).performClick()
-        composeRule.waitForIdle()
+    }
+
+    private fun waitForLoggedProfile(expected: Perfil) {
+        val deadline = System.currentTimeMillis() + 30_000
+        while (System.currentTimeMillis() < deadline) {
+            if (InovaGabApp.instance.sessionManager.currentUser.value?.perfil == expected) return
+            Thread.sleep(100)
+        }
+        throw AssertionError("Login não concluiu para o perfil $expected em 30 segundos")
+    }
+
+    private fun waitForInvalidLoginMessage() {
+        val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+        val found = device.wait(
+            Until.hasObject(By.text("E-mail ou senha inválidos.")),
+            30_000
+        )
+        if (!found) throw AssertionError("Mensagem de credenciais inválidas não apareceu em 30 segundos")
     }
 
     private fun logoutFromHome() {
@@ -88,12 +109,8 @@ class Sprint2JourneyInstrumentedTest {
     @Test
     fun A01_login_invalido_mostra_erro() {
         login("gestor@inovagab.local", "senha-invalida-teste")
-        composeRule.waitUntil(timeoutMillis = 15_000) {
-            runCatching {
-                composeRule.onNodeWithTag(TestTags.LOGIN_ERRO).assertExists()
-                true
-            }.getOrDefault(false)
-        }
+        waitForInvalidLoginMessage()
+        composeRule.onNodeWithTag(TestTags.LOGIN_ERRO).assertIsDisplayed()
         EvidenceRecorder.record(composeRule, "A01", "login_erro_credencial", "passed")
     }
 
@@ -101,6 +118,7 @@ class Sprint2JourneyInstrumentedTest {
     fun A02_operador_home_orientacoes_ideias_ranking() {
         val (email, pass) = requireCreds("operador1")
         login(email, pass)
+        waitForLoggedProfile(Perfil.OPERADOR)
         composeRule.onNodeWithTag(TestTags.HOME_OPERADOR).assertIsDisplayed()
         EvidenceRecorder.record(composeRule, "A02", "home_operador", "passed")
 
@@ -145,6 +163,7 @@ class Sprint2JourneyInstrumentedTest {
     fun A03_gestor_gestao_ideias_ia_indisponivel_ou_ok() {
         val (email, pass) = requireCreds("gestor")
         login(email, pass)
+        waitForLoggedProfile(Perfil.GESTOR)
         composeRule.onNodeWithTag(TestTags.HOME_GESTOR).assertIsDisplayed()
         EvidenceRecorder.record(composeRule, "A03", "home_gestor", "passed")
 
@@ -183,6 +202,7 @@ class Sprint2JourneyInstrumentedTest {
     fun A04_lider_dashboard_filtros_graficos() {
         val (email, pass) = requireCreds("lider")
         login(email, pass)
+        waitForLoggedProfile(Perfil.LIDER)
         composeRule.onNodeWithTag(TestTags.HOME_LIDER).assertIsDisplayed()
         EvidenceRecorder.record(composeRule, "A04", "home_lider", "passed")
 
