@@ -4,6 +4,13 @@ object TestTags {
     const val LOGIN_EMAIL = "login_email"
     const val LOGIN_SENHA = "login_senha"
     const val LOGIN_ENTRAR = "login_entrar"
+    const val LOGIN_ERRO = "login_erro"
+
+    const val HOME_OPERADOR = "home_operador"
+    const val HOME_GESTOR = "home_gestor"
+    const val HOME_LIDER = "home_lider"
+
+    const val ORIENTACOES_LISTA = "orientacoes_lista"
 
     const val IDEIA_FORM_TITULO = "ideia_form_titulo"
     const val IDEIA_FORM_AREA = "ideia_form_area"

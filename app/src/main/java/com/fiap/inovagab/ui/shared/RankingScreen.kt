@@ -27,11 +27,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.fiap.inovagab.core.di.inovaViewModel
+import com.fiap.inovagab.core.testing.TestTags
 import com.fiap.inovagab.core.ui.effects.OnResumeEffect
 import com.fiap.inovagab.data.model.Perfil
 import com.fiap.inovagab.data.model.User
@@ -133,6 +135,7 @@ fun RankingScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .weight(1f)
+                            .testTag(TestTags.RANKING_LISTA)
                     ) {
                         itemsIndexed(
                             state.usuarios,

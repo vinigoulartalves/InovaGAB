@@ -50,8 +50,19 @@ bash scripts/test-backend.sh
 ```
 
 - Executa `scripts/test-runner-entrypoint.sh` dentro do SDK **8.0.425**
-- **Exclui** `InovaGAB.IaExternalTests` do run padrão
+- Projetos **separados** (`UnitTests`, `IntegrationTests`) com TRX/cobertura em subpastas — evita sobrescrever `backend.trx`
+- Cobertura Coverlet: formato **`cobertura`** apenas (evita MSB1006 com lista `cobertura,opencover`)
+- Resumo com contagens: `artifacts/test-summary.json` · falha se `failed > 0` ou sem TRX
+- **Exclui** `InovaGAB.IaExternalTests` do run padrão (`RUN_IA_EXTERNAL_TESTS=true` + `AI_API_KEY` para opt-in)
 - TRX/cobertura em `artifacts/test-results/` e `artifacts/coverage/` (ignorados no Git)
+
+### Jornadas Android + capturas (emulador + API)
+
+```bash
+bash scripts/run-android-journey-evidence.sh
+```
+
+Credenciais via argumentos `adb` a partir do `.env` local (não versionado). PNG + `INDEX.json` no dispositivo; pull para `artifacts/android-journey/`.
 
 ### No host (Mongo já rodando)
 
