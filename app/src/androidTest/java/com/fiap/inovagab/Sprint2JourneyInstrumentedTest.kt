@@ -60,6 +60,12 @@ class Sprint2JourneyInstrumentedTest {
 
     @Before
     fun clearDataAndRequireApi() {
+        InovaGabApp.instance.sessionManager.clear()
+        composeRule.activityRule.scenario.recreate()
+        composeRule.waitUntil(timeoutMillis = 20_000) {
+            composeRule.onAllNodesWithTag(TestTags.LOGIN_EMAIL)
+                .fetchSemanticsNodes().isNotEmpty()
+        }
         requireBackend()
         composeRule.waitForIdle()
     }
@@ -100,7 +106,7 @@ class Sprint2JourneyInstrumentedTest {
         composeRule.onNodeWithText("Ver orientações").performClick()
         composeRule.waitUntil(20_000) {
             runCatching {
-                composeRule.onNodeWithTag(TestTags.ORIENTACOES_LISTA).assertExists()
+                composeRule.onNodeWithText("Orientações Estratégicas").assertIsDisplayed()
                 true
             }.getOrDefault(false)
         }
@@ -115,7 +121,7 @@ class Sprint2JourneyInstrumentedTest {
         composeRule.onNodeWithText("Minhas ideias").performClick()
         composeRule.waitUntil(20_000) {
             runCatching {
-                composeRule.onNodeWithTag(TestTags.MINHAS_IDEIAS_LISTA).assertExists()
+                composeRule.onNodeWithText("Minhas ideias").assertIsDisplayed()
                 true
             }.getOrDefault(false)
         }
@@ -125,7 +131,7 @@ class Sprint2JourneyInstrumentedTest {
         composeRule.onNodeWithText("Ranking").performClick()
         composeRule.waitUntil(20_000) {
             runCatching {
-                composeRule.onNodeWithTag(TestTags.RANKING_LISTA).assertExists()
+                composeRule.onNodeWithText("Ranking de Inovação").assertIsDisplayed()
                 true
             }.getOrDefault(false)
         }
@@ -144,7 +150,7 @@ class Sprint2JourneyInstrumentedTest {
         composeRule.onNodeWithText("Gerenciar ideias").performClick()
         composeRule.waitUntil(25_000) {
             runCatching {
-                composeRule.onNodeWithTag(TestTags.GESTAO_IDEIAS_LISTA).assertExists()
+                composeRule.onNodeWithText("Gestão de Ideias").assertIsDisplayed()
                 true
             }.getOrDefault(false)
         }
@@ -182,7 +188,7 @@ class Sprint2JourneyInstrumentedTest {
         composeRule.onNodeWithText("Gerenciar orientações").performClick()
         composeRule.waitUntil(20_000) {
             runCatching {
-                composeRule.onNodeWithTag(TestTags.ORIENTACOES_LISTA).assertExists()
+                composeRule.onNodeWithText("Orientações Estratégicas").assertIsDisplayed()
                 true
             }.getOrDefault(false)
         }
