@@ -31,7 +31,7 @@
 | `dotnet test tests/InovaGAB.UnitTests` | **4 passed** |
 | `bash scripts/test-android.sh` | **OK** (unit 5 tests incl. ApiMessages, lint, APK) |
 | `bash scripts/test-backend.sh` | **Não executado** — Docker indisponível no agente |
-| Commit | `$(git rev-parse --short HEAD 2>/dev/null)` |
+| Commit testabilidade | `2b26485` |
 
 Integração Mongo: executar localmente `bash scripts/test-backend.sh` ou CI GitHub.
 
