@@ -60,8 +60,9 @@ class Sprint2JourneyInstrumentedTest {
 
     @Before
     fun clearDataAndRequireApi() {
+        // A regra já cria uma Activity limpa para cada teste. Recriá-la aqui deixa
+        // duas raízes Compose concorrendo pelo idling resource no emulador.
         InovaGabApp.instance.sessionManager.clear()
-        composeRule.activityRule.scenario.recreate()
         composeRule.waitUntil(timeoutMillis = 20_000) {
             composeRule.onAllNodesWithTag(TestTags.LOGIN_EMAIL)
                 .fetchSemanticsNodes().isNotEmpty()
