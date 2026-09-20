@@ -1,8 +1,8 @@
 # InovaGAB Sprint 2 — STATUS
 
 **Atualizado em:** 2026-09-20 (UTC)  
-**Etapa atual:** Documentação e entrega (ZIP, checklist, endpoints)  
-**Branch de trabalho:** `cursor/sprint2-docs-delivery-befe` (base: testabilidade)
+**Etapa atual:** Consolidação na `main` (PR aberto a partir de `cursor/sprint2-consolidate-main-befe`)  
+**Linha integrada:** `origin/cursor/sprint2-testing-befe` (PRs #14–#17)
 
 ---
 
