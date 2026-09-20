@@ -47,7 +47,7 @@ public sealed class Sprint2JornadaHttpE2ETests
             Ativa = true
         });
         estResp.EnsureSuccessStatusCode();
-        var estrategia = (await estResp.Content.ReadFromJsonAsync<EstrategiaDetalheDto>())!;
+        var estrategia = (await estResp.Content.ReadFromJsonAsync<EstrategiaDetalheDto>(IntegrationTestJson.Options))!;
 
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", op1.AccessToken);
         var ideiaResp = await client.PostAsJsonAsync("/api/v1/ideias", new IdeiaCreateRequestDto
@@ -58,7 +58,7 @@ public sealed class Sprint2JornadaHttpE2ETests
             EstrategiaId = estrategia.Id
         });
         ideiaResp.EnsureSuccessStatusCode();
-        var ideia = (await ideiaResp.Content.ReadFromJsonAsync<IdeiaDetalheDto>())!;
+        var ideia = (await ideiaResp.Content.ReadFromJsonAsync<IdeiaDetalheDto>(IntegrationTestJson.Options))!;
 
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", op2.AccessToken);
         Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync($"/api/v1/ideias/{ideia.Id}")).StatusCode);
@@ -77,7 +77,7 @@ public sealed class Sprint2JornadaHttpE2ETests
             Prioridade = PrioridadeIdeia.ALTA
         });
         aprovar.EnsureSuccessStatusCode();
-        var ideiaAprovada = (await aprovar.Content.ReadFromJsonAsync<IdeiaDetalheDto>())!;
+        var ideiaAprovada = (await aprovar.Content.ReadFromJsonAsync<IdeiaDetalheDto>(IntegrationTestJson.Options))!;
 
         var gestorId = gestor.Usuario.Id;
         var conversao = await client.PostAsJsonAsync($"/api/v1/ideias/{ideiaAprovada.Id}/projeto", new
@@ -95,7 +95,7 @@ public sealed class Sprint2JornadaHttpE2ETests
             prazo = DateOnly.FromDateTime(DateTime.UtcNow.AddMonths(3))
         });
         conversao.EnsureSuccessStatusCode();
-        var projeto = (await conversao.Content.ReadFromJsonAsync<ProjetoDetalheDto>())!;
+        var projeto = (await conversao.Content.ReadFromJsonAsync<ProjetoDetalheDto>(IntegrationTestJson.Options))!;
 
         var segundaConversao = await client.PostAsJsonAsync($"/api/v1/ideias/{ideiaAprovada.Id}/projeto", new { versao = 99 });
         Assert.Equal(HttpStatusCode.Conflict, segundaConversao.StatusCode);
@@ -119,18 +119,18 @@ public sealed class Sprint2JornadaHttpE2ETests
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", lider.AccessToken);
         var dash = await client.GetAsync("/api/v1/relatorios/dashboard");
         dash.EnsureSuccessStatusCode();
-        var relatorio = (await dash.Content.ReadFromJsonAsync<DashboardRelatorioDto>())!;
+        var relatorio = (await dash.Content.ReadFromJsonAsync<DashboardRelatorioDto>(IntegrationTestJson.Options))!;
         Assert.True(relatorio.InvestimentoTotal >= 1000);
 
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", op1.AccessToken);
         var minha = await client.GetAsync($"/api/v1/ideias/{ideia.Id}");
         minha.EnsureSuccessStatusCode();
-        var ideiaAtual = (await minha.Content.ReadFromJsonAsync<IdeiaDetalheDto>())!;
+        var ideiaAtual = (await minha.Content.ReadFromJsonAsync<IdeiaDetalheDto>(IntegrationTestJson.Options))!;
         Assert.Equal(StatusIdeia.VIROU_PROJETO, ideiaAtual.Status);
 
         var ranking = await client.GetAsync("/api/v1/ranking");
         ranking.EnsureSuccessStatusCode();
-        var rank = (await ranking.Content.ReadFromJsonAsync<RankingResponseDto>())!;
+        var rank = (await ranking.Content.ReadFromJsonAsync<RankingResponseDto>(IntegrationTestJson.Options))!;
         Assert.NotEmpty(rank.Items);
     }
 
@@ -142,6 +142,6 @@ public sealed class Sprint2JornadaHttpE2ETests
             Senha = AuthTestSeed.TestPassword
         });
         response.EnsureSuccessStatusCode();
-        return (await response.Content.ReadFromJsonAsync<LoginResponseDto>())!;
+        return (await response.Content.ReadFromJsonAsync<LoginResponseDto>(IntegrationTestJson.Options))!;
     }
 }
