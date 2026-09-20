@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <ProjectReference Include="..\InovaGAB.Domain\InovaGAB.Domain.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,100 @@
+# Ambiente de avaliação/desenvolvimento — NÃO usar como produção.
+# MongoDB não é exposto publicamente; API apenas em localhost:8080.
+
+name: inovagab-sprint2
+
+services:
+  mongo:
+    image: mongo:7.0.24
+    container_name: inovagab-mongo
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 10s
+    networks:
+      - inovagab
+
+  mongo-init:
+    image: mongo:7.0.24
+    container_name: inovagab-mongo-init
+    depends_on:
+      mongo:
+        condition: service_healthy
+    environment:
+      MONGO_HOST: mongo
+      MONGO_PORT: 27017
+      RS_NAME: rs0
+    volumes:
+      - ./infra/mongo/init-replica-set.sh:/init-replica-set.sh:ro
+    entrypoint: ["/bin/bash", "/init-replica-set.sh"]
+    restart: "on-failure"
+    networks:
+      - inovagab
+
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: inovagab-api
+    depends_on:
+      mongo-init:
+        condition: service_completed_successfully
+    env_file:
+      - .env
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://0.0.0.0:8080
+      Mongo__ConnectionString: mongodb://mongo:27017/?replicaSet=rs0
+      Mongo__DatabaseName: inovagab
+      Jwt__Issuer: inovagab
+      Jwt__Audience: inovagab-mobile
+      Jwt__Secret: ${JWT_SECRET}
+      Jwt__AccessTokenMinutes: 15
+      AI__Enabled: ${AI_ENABLED:-false}
+      AI__ApiKey: ${AI_API_KEY:-}
+      AI__Model: ${AI_MODEL:-gemini-2.0-flash}
+      Seed__Enabled: ${SEED_ENABLED:-true}
+    ports:
+      - "127.0.0.1:8080:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8080/health/ready || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    networks:
+      - inovagab
+
+  test-runner:
+    profiles: ["tests"]
+    image: mcr.microsoft.com/dotnet/sdk:8.0.401-bookworm-slim
+    working_dir: /src
+    depends_on:
+      mongo-init:
+        condition: service_completed_successfully
+    environment:
+      DOTNET_ROOT: /usr/share/dotnet
+      MONGODB_URI: mongodb://mongo:27017/?replicaSet=rs0
+      Mongo__DatabaseName: inovagab_test
+      Jwt__Secret: ${JWT_SECRET:-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa}
+    volumes:
+      - ./:/src
+    command: >
+      bash -lc "
+        dotnet restore backend/InovaGAB.sln &&
+        dotnet test backend/InovaGAB.sln --no-restore -c Release --verbosity normal
+      "
+    networks:
+      - inovagab
+
+networks:
+  inovagab:
+    driver: bridge
+
+volumes:
+  mongo_data:

@@ -1,0 +1,68 @@
+# InovaGAB Backend (Sprint 2)
+
+API **.NET 8** com **EF Core + MongoDB** (`MongoDB.EntityFrameworkCore` 8.4.4), JWT (fundação), health checks e Docker Compose de avaliação.
+
+## Projetos
+
+| Projeto | Responsabilidade |
+|---|---|
+| `InovaGAB.Api` | HTTP, Swagger, ProblemDetails, `/health/*` |
+| `InovaGAB.Application` | Casos de uso (módulos nas próximas etapas) |
+| `InovaGAB.Domain` | Entidades de domínio |
+| `InovaGAB.Infrastructure` | `InovaGabDbContext`, driver Mongo, inicialização idempotente |
+
+## Versões fixadas (etapa 2)
+
+| Componente | Versão |
+|---|---|
+| SDK .NET | 8.0.425 (`global.json`) |
+| `Microsoft.EntityFrameworkCore` | 8.0.30 |
+| `MongoDB.EntityFrameworkCore` | 8.4.4 |
+| `MongoDB.Driver` | 3.11.2 |
+| Imagem MongoDB (Compose) | `mongo:7.0.24` |
+| Runtime/SDK Docker API | `8.0.401` / `8.0.21` |
+
+Lock files: `packages.lock.json` em cada projeto (CPM em `/Directory.Packages.props`).
+
+## Configuração (binding explícito)
+
+Variáveis de ambiente (exemplo no `.env` gerado por `scripts/setup-dev.sh`):
+
+| Variável | Seção .NET |
+|---|---|
+| `JWT_SECRET` | `Jwt__Secret` |
+| `Mongo__ConnectionString` | `Mongo:ConnectionString` |
+| `Mongo__DatabaseName` | `Mongo:DatabaseName` |
+| `AI__Enabled` | `AI:Enabled` (opcional; core não depende de Gemini) |
+| `AI__ApiKey` | `AI:ApiKey` |
+| `SEED_ENABLED` | `Seed__Enabled` (desligado em Production) |
+
+## Comandos
+
+```bash
+cd backend
+dotnet restore InovaGAB.sln
+dotnet build InovaGAB.sln -c Release
+dotnet test InovaGAB.sln -c Release
+```
+
+Teste EF↔Mongo: `tests/InovaGAB.IntegrationTests/Persistence/MongoEfCoreCrudTests.cs` — requer `MONGODB_URI` (recomendado: `docker compose --profile tests run --rm test-runner`).
+
+## Health
+
+- `GET /health/live` — processo
+- `GET /health/ready` — Mongo inicializado + ping (sem dependência de IA)
+
+Swagger em Development: `http://localhost:8080/swagger`
+
+Contrato completo: `docs/sprint2/openapi.yaml`
+
+## Docker
+
+Build a partir da raiz do repositório:
+
+```bash
+docker compose up -d --build
+```
+
+Rede interna: host Mongo `mongo:27017`, replica set `rs0`. API: `http://api:8080` entre containers; host `http://127.0.0.1:8080`.
