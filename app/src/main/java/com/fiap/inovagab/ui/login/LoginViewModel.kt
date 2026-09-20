@@ -2,11 +2,11 @@ package com.fiap.inovagab.ui.login
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.fiap.inovagab.core.session.SessionManager
+import com.fiap.inovagab.InovaGabApp
+import com.fiap.inovagab.core.network.ApiException
+import com.fiap.inovagab.core.session.AppSession
 import com.fiap.inovagab.data.model.Perfil
 import com.fiap.inovagab.data.repository.AuthRepository
-import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
-import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,7 +22,7 @@ data class LoginUiState(
 )
 
 class LoginViewModel(
-    private val authRepository: AuthRepository = AuthRepository()
+    private val authRepository: AuthRepository = InovaGabApp.instance.authRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LoginUiState())
@@ -51,7 +51,7 @@ class LoginViewModel(
             val resultado = authRepository.login(email, senha)
             resultado.fold(
                 onSuccess = { user ->
-                    SessionManager.setUser(user)
+                    AppSession.manager.setUser(user)
                     _uiState.update {
                         it.copy(
                             loading = false,
@@ -77,8 +77,11 @@ class LoginViewModel(
     }
 
     private fun mensagemDeErro(erro: Throwable): String = when (erro) {
-        is FirebaseAuthInvalidUserException -> "Usuário não encontrado."
-        is FirebaseAuthInvalidCredentialsException -> "E-mail ou senha inválidos."
+        is ApiException -> when (erro.httpCode) {
+            401 -> "E-mail ou senha inválidos."
+            429 -> "Muitas tentativas. Aguarde e tente novamente."
+            else -> erro.message
+        }
         else -> erro.message ?: "Não foi possível entrar. Tente novamente."
     }
 }

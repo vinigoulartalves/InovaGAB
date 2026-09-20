@@ -1,12 +1,5 @@
 #!/usr/bin/env bash
+# Alias legado — preferir scripts/smoke-api.sh
 set -euo pipefail
-
-BASE_URL="${BASE_URL:-http://127.0.0.1:8080}"
-
-echo "Smoke: GET ${BASE_URL}/health/live"
-curl -fsS "${BASE_URL}/health/live" | tee /tmp/inovagab-live.json
-
-echo "Smoke: GET ${BASE_URL}/health/ready"
-curl -fsS "${BASE_URL}/health/ready" | tee /tmp/inovagab-ready.json
-
-echo "Smoke OK"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+exec bash "${ROOT_DIR}/scripts/smoke-api.sh"

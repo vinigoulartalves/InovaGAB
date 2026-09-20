@@ -1,15 +1,21 @@
 package com.fiap.inovagab.core.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.fiap.inovagab.core.session.SessionManager
+import com.fiap.inovagab.InovaGabApp
+import com.fiap.inovagab.core.session.AppSession
 import com.fiap.inovagab.data.model.Perfil
-import com.fiap.inovagab.data.repository.AuthRepository
 import com.fiap.inovagab.ui.gestor.GestaoIdeiasScreen
 import com.fiap.inovagab.ui.gestor.HomeGestorScreen
 import com.fiap.inovagab.ui.gestor.ProjetoFormScreen
@@ -23,19 +29,41 @@ import com.fiap.inovagab.ui.operador.MinhasIdeiasScreen
 import com.fiap.inovagab.ui.shared.OrientacoesListScreen
 import com.fiap.inovagab.ui.shared.ProjetosListScreen
 import com.fiap.inovagab.ui.shared.RankingScreen
+import kotlinx.coroutines.launch
 
 @Composable
 fun AppNavGraph(
     navController: NavHostController = rememberNavController(),
-    startDestination: String = Routes.LOGIN
+    startDestination: String? = null
 ) {
-    val authRepository = AuthRepository()
+    val scope = rememberCoroutineScope()
+    val app = InovaGabApp.instance
+    var resolvedStart by remember { mutableStateOf(startDestination) }
+
+    LaunchedEffect(Unit) {
+        if (resolvedStart == null) {
+            val restaurou = app.sessionManager.restoreSession()
+            resolvedStart = if (restaurou) {
+                rotaHome(AppSession.manager.currentUser.value?.perfil)
+            } else {
+                Routes.LOGIN
+            }
+        }
+        app.sessionManager.sessionExpired.collect {
+            navController.navigate(Routes.LOGIN) {
+                popUpTo(0) { inclusive = true }
+            }
+        }
+    }
+
+    if (resolvedStart == null) return
 
     val logout: () -> Unit = {
-        authRepository.logout()
-        SessionManager.clear()
-        navController.navigate(Routes.LOGIN) {
-            popUpTo(0) { inclusive = true }
+        scope.launch {
+            app.authRepository.logout()
+            navController.navigate(Routes.LOGIN) {
+                popUpTo(0) { inclusive = true }
+            }
         }
     }
 
@@ -43,7 +71,7 @@ fun AppNavGraph(
 
     NavHost(
         navController = navController,
-        startDestination = startDestination
+        startDestination = resolvedStart!!
     ) {
         composable(Routes.LOGIN) {
             LoginScreen(
@@ -63,19 +91,35 @@ fun AppNavGraph(
         composable(Routes.HOME_OPERADOR) {
             HomeOperadorScreen(
                 onVerOrientacoes = { navController.navigate(Routes.ORIENTACOES_LIST) },
-                onCadastrarIdeia = { navController.navigate(Routes.IDEIA_FORM) },
+                onCadastrarIdeia = { navController.navigate(Routes.ideiaFormNova()) },
                 onMinhasIdeias = { navController.navigate(Routes.MINHAS_IDEIAS) },
                 onRanking = { navController.navigate(Routes.RANKING) },
                 onLogout = logout
             )
         }
-        composable(Routes.IDEIA_FORM) {
+        composable(
+            route = Routes.IDEIA_FORM,
+            arguments = listOf(
+                navArgument(Routes.IDEIA_FORM_ARG_ID) {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
+            )
+        ) { entry ->
+            val ideiaId = entry.arguments?.getString(Routes.IDEIA_FORM_ARG_ID)
             IdeiaFormScreen(
+                ideiaId = ideiaId,
                 onBack = back,
                 onSucesso = back
             )
         }
-        composable(Routes.MINHAS_IDEIAS) { MinhasIdeiasScreen(onBack = back) }
+        composable(Routes.MINHAS_IDEIAS) {
+            MinhasIdeiasScreen(
+                onBack = back,
+                onEditar = { id -> navController.navigate(Routes.ideiaFormEdicao(id)) }
+            )
+        }
 
         composable(Routes.HOME_GESTOR) {
             HomeGestorScreen(
@@ -87,7 +131,14 @@ fun AppNavGraph(
                 onLogout = logout
             )
         }
-        composable(Routes.GESTAO_IDEIAS) { GestaoIdeiasScreen(onBack = back) }
+        composable(Routes.GESTAO_IDEIAS) {
+            GestaoIdeiasScreen(
+                onBack = back,
+                onConverterProjeto = { ideiaId ->
+                    navController.navigate(Routes.projetoFormConversao(ideiaId))
+                }
+            )
+        }
 
         composable(
             route = Routes.PROJETO_FORM,
@@ -96,12 +147,19 @@ fun AppNavGraph(
                     type = NavType.StringType
                     nullable = true
                     defaultValue = null
+                },
+                navArgument(Routes.PROJETO_FORM_ARG_IDEA) {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
                 }
             )
         ) { entry ->
             val id = entry.arguments?.getString(Routes.PROJETO_FORM_ARG_ID)
+            val ideiaId = entry.arguments?.getString(Routes.PROJETO_FORM_ARG_IDEA)
             ProjetoFormScreen(
                 projetoId = id,
+                ideiaConversaoId = ideiaId,
                 onBack = back,
                 onSucesso = back
             )
@@ -152,4 +210,11 @@ fun AppNavGraph(
         }
         composable(Routes.RANKING) { RankingScreen(onBack = back) }
     }
+}
+
+private fun rotaHome(perfil: Perfil?): String = when (perfil) {
+    Perfil.OPERADOR -> Routes.HOME_OPERADOR
+    Perfil.GESTOR -> Routes.HOME_GESTOR
+    Perfil.LIDER -> Routes.HOME_LIDER
+    null -> Routes.LOGIN
 }

@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -30,16 +31,19 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
+import com.fiap.inovagab.core.di.inovaViewModel
 import com.fiap.inovagab.core.ui.components.AppButton
 import com.fiap.inovagab.core.ui.components.AppTextField
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun OrientacaoFormScreen(
     orientacaoId: String? = null,
     onBack: () -> Unit = {},
     onSucesso: () -> Unit = {},
-    viewModel: LiderViewModel = viewModel()
+    viewModel: LiderViewModel = inovaViewModel()
 ) {
     val state by viewModel.formState.collectAsStateWithLifecycle()
 
@@ -108,6 +112,74 @@ fun OrientacaoFormScreen(
                 singleLine = false,
                 enabled = !ocupado
             )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            AppTextField(
+                value = state.categoria,
+                onValueChange = viewModel::onCategoriaChange,
+                label = "Categoria",
+                enabled = !ocupado
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            AppTextField(
+                value = state.campanha,
+                onValueChange = viewModel::onCampanhaChange,
+                label = "Campanha",
+                enabled = !ocupado
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            AppTextField(
+                value = state.inicioVigencia,
+                onValueChange = viewModel::onInicioVigenciaChange,
+                label = "Início da vigência (AAAA-MM-DD)",
+                enabled = !ocupado
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            AppTextField(
+                value = state.fimVigencia,
+                onValueChange = viewModel::onFimVigenciaChange,
+                label = "Fim da vigência (opcional, AAAA-MM-DD)",
+                enabled = !ocupado
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(text = "Estratégia ativa", color = Color(0xFF4A5A6E))
+                androidx.compose.material3.Switch(
+                    checked = state.ativa,
+                    onCheckedChange = viewModel::onAtivaChange,
+                    enabled = !ocupado
+                )
+            }
+
+            if (emEdicao && state.historico.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = "Histórico",
+                    color = Color(0xFF002B5C),
+                    fontWeight = FontWeight.SemiBold,
+                    style = MaterialTheme.typography.titleSmall
+                )
+                state.historico.take(8).forEach { item ->
+                    Text(
+                        text = "v${item.versao} · ${item.acao} · ${formatarDataHistorico(item.ocorridoEm)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color(0xFF4A5A6E),
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+            }
 
             if (state.erro != null) {
                 Spacer(modifier = Modifier.height(8.dp))
@@ -185,4 +257,9 @@ fun OrientacaoFormScreen(
             }
         )
     }
+}
+
+private fun formatarDataHistorico(epochMs: Long): String {
+    val fmt = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale("pt", "BR"))
+    return fmt.format(Date(epochMs))
 }

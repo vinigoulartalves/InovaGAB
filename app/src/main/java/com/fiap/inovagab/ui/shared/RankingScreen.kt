@@ -31,7 +31,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
+import com.fiap.inovagab.core.di.inovaViewModel
 import com.fiap.inovagab.core.ui.effects.OnResumeEffect
 import com.fiap.inovagab.data.model.Perfil
 import com.fiap.inovagab.data.model.User
@@ -39,7 +39,7 @@ import com.fiap.inovagab.data.model.User
 @Composable
 fun RankingScreen(
     onBack: () -> Unit = {},
-    viewModel: RankingViewModel = viewModel()
+    viewModel: RankingViewModel = inovaViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 

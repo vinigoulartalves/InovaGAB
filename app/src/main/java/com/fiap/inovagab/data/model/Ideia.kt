@@ -23,5 +23,7 @@ data class Ideia(
     val autorNome: String = "",
     val status: StatusIdeia = StatusIdeia.ENVIADA,
     val prioridade: PrioridadeIdeia = PrioridadeIdeia.MEDIA,
+    val estrategiaId: String = "",
+    val versao: Int = 1,
     val criadoEm: Long = System.currentTimeMillis()
 )

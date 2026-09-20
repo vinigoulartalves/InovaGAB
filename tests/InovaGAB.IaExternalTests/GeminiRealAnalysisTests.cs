@@ -28,17 +28,13 @@ public sealed class GeminiRealAnalysisTests
             ?? Environment.GetEnvironmentVariable("AI__ApiKey")
             ?? Environment.GetEnvironmentVariable("GEMINI_API_KEY");
 
-        if (string.IsNullOrWhiteSpace(apiKey))
-        {
-            _output.WriteLine("PENDENTE: defina AI_API_KEY para executar teste real Gemini.");
-            return;
-        }
+        Assert.False(
+            string.IsNullOrWhiteSpace(apiKey),
+            "PENDENTE/opt-in: defina AI_API_KEY antes de executar InovaGAB.IaExternalTests (não é sucesso silencioso).");
 
-        if (!MongoTestEnvironment.IsAvailable)
-        {
-            _output.WriteLine("PENDENTE: MONGODB_URI ausente para teste real Gemini.");
-            return;
-        }
+        Assert.True(
+            MongoTestEnvironment.IsAvailable,
+            "PENDENTE: MONGODB_URI ausente para teste real Gemini.");
 
         await using var factory = new InovaGabWebApplicationFactory
         {

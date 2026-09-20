@@ -1,54 +1,63 @@
 # InovaGAB Sprint 2 — STATUS
 
 **Atualizado em:** 2026-09-20 (UTC)  
-**Etapa atual:** 6 — Análises IA (Gemini)  
-**Branch:** `cursor/sprint2-backend-foundation-befe`
+**Etapa atual:** Consolidação na `main` (PR aberto a partir de `cursor/sprint2-consolidate-main-befe`)  
+**Linha integrada:** `origin/cursor/sprint2-testing-befe` (PRs #14–#17)
 
 ---
 
-## 1. Resumo etapa 6
+## 1. Documentação e entrega
 
 | Item | Estado |
-|---|---|
-| `POST/GET /api/v1/ideias/{id}/analises-ia` (GESTOR) | **Implementado** |
-| Cliente HTTP Gemini (`generateContent` + JSON Schema) | **Implementado** |
-| `AI__Model` configurável (padrão `gemini-2.0-flash`) | **Implementado** |
-| Persistência com provedor/modelo/promptVersion/entradaHash/versão | **Implementado** |
-| Cache por hash+modelo+prompt (sem re-chamar API) | **Implementado** |
-| Flag `desatualizada` após edição da ideia | **Implementado** |
-| IA não altera status/prioridade/pontos | **Implementado** |
-| 503 sem chave/desabilitada; 429/502/504 sem segredos | **Implementado** |
-| Rate limit `ia-analise` (10/min por usuário) | **Implementado** |
-| Testes HTTP mock (`IdeiaAnalysisTests`) | **Implementado** — requer Mongo |
-| Teste real opt-in (`InovaGAB.IaExternalTests`) | **Implementado** — requer `AI_API_KEY` |
-| Evidência chamada real | **PENDENTE** — ver `IA_EVIDENCIA.md` |
-
-Documentação: `docs/sprint2/IA_GEMINI.md`, `docs/sprint2/IA_EVIDENCIA.md`.
+|------|--------|
+| README raiz + `backend/README.md` (pré-requisitos, PS/Bash, EF/Mongo, seed, troubleshooting) | **Implementado** |
+| `ENDPOINTS.md` (rota/método/role/erros) | **Implementado** |
+| `OPENAPI_COMPARACAO.md` + `export-openapi.sh/.ps1` | **Implementado** (export runtime depende de API local) |
+| `APRESENTACAO.md` | **Implementado** (`[NOME]`/`[RM]` pendentes) |
+| PDF/PPT apresentação | **Pendente** |
+| `CHECKLIST_ENTREGA.md` | **Implementado** |
+| `package-delivery.sh/.ps1` + `MANIFEST_ENTREGA.md` | **Implementado** — executar para comprovar ZIP/SHA256 |
+| Divergência Dockerfile SDK 8.0.401 → **8.0.425** | **Corrigido** |
+| Swagger `Program.cs` descrição desatualizada | **Corrigido** |
 
 ---
 
-## 2. Etapas anteriores (resumo)
+## 2. Testabilidade (etapa 9)
 
-- **5:** projetos, conversão, relatórios, ranking  
-- **4:** estratégias e ideias  
-- **3:** autenticação e seed  
+| Item | Estado |
+|------|--------|
+| Scripts Bash/PowerShell, Compose `tests`, matriz, CI | **Implementado** |
+| `dotnet test` unit (4 ROI) | **Executado** — passed |
+| `test-android.sh` | **Executado** — OK |
+| `test-backend.sh` | **Não executado** no agente (sem Docker) |
 
----
-
-## 3. Testes (agente Cloud)
-
-```bash
-cd backend && dotnet build -c Release && dotnet test ../tests/InovaGAB.IntegrationTests -c Release
-```
-
-- **Build:** OK  
-- **Integração:** bloqueada sem `MONGODB_URI`  
-- **IA real:** `dotnet test ../tests/InovaGAB.IaExternalTests` com `AI_API_KEY` + Mongo
-
-Com Docker: `docker compose --profile tests run --rm test-runner`
+Branch: `cursor/sprint2-testing-befe` (PR #16).
 
 ---
 
-## 4. Próxima etapa
+## 3. Android etapa 8
 
-**Prompt 7+:** integração Android (Retrofit), telas e CI.
+REST completo (operador/gestor/líder), dashboard Canvas, IA/conversão — branch `cursor/sprint2-android-features-befe` (PR #15).
+
+---
+
+## 4. Backend etapas 2–6
+
+Auth, estratégias, ideias, projetos, relatórios, ranking, IA Gemini — branch `cursor/sprint2-backend-foundation-befe`.
+
+---
+
+## 5. Evidências IA
+
+`docs/sprint2/IA_EVIDENCIA.md` — chamada real Gemini **PENDENTE** sem `AI_API_KEY` opt-in. Modelo documentado: `gemini-2.0-flash`.
+
+---
+
+## 6. Próximos passos (humano)
+
+1. Preencher `[NOME]` e `[RM]` em `APRESENTACAO.md`.  
+2. Exportar PDF/PPT da apresentação.  
+3. Rodar `bash scripts/package-delivery.sh` e anexar ZIPs à entrega.  
+4. Opcional: `export-openapi.sh` após `dev-up` e atualizar comparação.  
+5. Teste IA real + atualizar `IA_EVIDENCIA.md`.  
+6. **Não** publicar na FIAP a partir deste agente.

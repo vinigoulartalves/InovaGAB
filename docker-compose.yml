@@ -76,7 +76,7 @@ services:
 
   test-runner:
     profiles: ["tests"]
-    image: mcr.microsoft.com/dotnet/sdk:8.0.401-bookworm-slim
+    image: mcr.microsoft.com/dotnet/sdk:8.0.425-bookworm-slim
     working_dir: /src
     depends_on:
       mongo-init:
@@ -84,15 +84,14 @@ services:
     environment:
       DOTNET_ROOT: /usr/share/dotnet
       MONGODB_URI: mongodb://mongo:27017/?replicaSet=rs0
-      Mongo__DatabaseName: inovagab_test
+      Mongo__DatabaseName: inovagab_test_compose
       Jwt__Secret: ${JWT_SECRET:-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa}
+      ARTIFACTS_DIR: /src/artifacts
     volumes:
       - ./:/src
-    command: >
-      bash -lc "
-        dotnet restore backend/InovaGAB.sln &&
-        dotnet test backend/InovaGAB.sln --no-restore -c Release --verbosity normal
-      "
+    command:
+      - /bin/bash
+      - /src/scripts/test-runner-entrypoint.sh
     networks:
       - inovagab
 

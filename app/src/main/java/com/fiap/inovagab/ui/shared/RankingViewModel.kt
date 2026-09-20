@@ -3,6 +3,7 @@ package com.fiap.inovagab.ui.shared
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fiap.inovagab.data.model.User
+import com.fiap.inovagab.InovaGabApp
 import com.fiap.inovagab.data.repository.UserRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,7 +18,7 @@ data class RankingUiState(
 )
 
 class RankingViewModel(
-    private val repository: UserRepository = UserRepository()
+    private val repository: UserRepository = InovaGabApp.instance.userRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(RankingUiState())

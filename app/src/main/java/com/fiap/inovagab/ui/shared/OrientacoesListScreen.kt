@@ -40,8 +40,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.fiap.inovagab.core.session.SessionManager
+import com.fiap.inovagab.core.di.inovaViewModel
+import com.fiap.inovagab.core.session.AppSession
 import com.fiap.inovagab.core.ui.components.AppCard
 import com.fiap.inovagab.core.ui.effects.OnResumeEffect
 import com.fiap.inovagab.data.model.Orientacao
@@ -56,10 +56,10 @@ fun OrientacoesListScreen(
     onBack: () -> Unit = {},
     onCriar: () -> Unit = {},
     onEditar: (String) -> Unit = {},
-    viewModel: LiderViewModel = viewModel()
+    viewModel: LiderViewModel = inovaViewModel()
 ) {
     val state by viewModel.listState.collectAsStateWithLifecycle()
-    val usuario by SessionManager.currentUser.collectAsState()
+    val usuario by AppSession.manager.currentUser.collectAsState()
     val isLider = usuario?.perfil == Perfil.LIDER
 
     OnResumeEffect {
@@ -222,6 +222,38 @@ private fun OrientacaoCard(
             color = Color(0xFF4A5A6E),
             style = MaterialTheme.typography.bodyMedium
         )
+
+        if (orientacao.categoria.isNotBlank() || orientacao.campanha.isNotBlank()) {
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = buildString {
+                    if (orientacao.categoria.isNotBlank()) append("Categoria: ${orientacao.categoria}")
+                    if (orientacao.campanha.isNotBlank()) {
+                        if (isNotEmpty()) append(" · ")
+                        append("Campanha: ${orientacao.campanha}")
+                    }
+                },
+                color = Color(0xFF4A5A6E),
+                style = MaterialTheme.typography.bodySmall
+            )
+        }
+
+        if (!orientacao.vigente || orientacao.arquivada) {
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = "Arquivada — visível apenas como referência (não selecionável em novos vínculos).",
+                color = Color(0xFFB26A00),
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+        } else {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "Vigente",
+                color = Color(0xFF1B7F3B),
+                style = MaterialTheme.typography.labelMedium
+            )
+        }
 
         if (orientacao.criadoEm > 0L) {
             Spacer(modifier = Modifier.height(8.dp))
