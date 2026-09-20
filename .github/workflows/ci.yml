@@ -110,7 +110,9 @@ jobs:
       - name: Build journey APKs
         run: |
           chmod +x gradlew
-          ./gradlew :app:assembleDebug :app:assembleDebugAndroidTest --no-daemon
+          ./gradlew :app:assembleDebug :app:assembleDebugAndroidTest \
+            -PapiBaseUrl=http://127.0.0.1:8080/ \
+            --no-daemon
 
       - name: Run instrumented journeys on emulator
         uses: reactivecircus/android-emulator-runner@v2
