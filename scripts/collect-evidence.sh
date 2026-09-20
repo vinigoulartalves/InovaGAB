@@ -20,7 +20,18 @@ mkdir -p "$ARTIFACTS"
   echo "compose=$(docker compose version 2>/dev/null || echo n/a)"
   if [[ -d "${ARTIFACTS}/test-results" ]]; then
     echo "trx_files=$(find "${ARTIFACTS}/test-results" -name '*.trx' 2>/dev/null | wc -l)"
+    if [[ -f "${ARTIFACTS}/test-summary.txt" ]]; then
+      echo "backend_summary=$(cat "${ARTIFACTS}/test-summary.txt")"
+    fi
   fi
 } > "$MANIFEST"
+
+if [[ -f "${ARTIFACTS}/test-summary.json" ]] || [[ -d "${ARTIFACTS}/android-journey" ]]; then
+  python3 "${ROOT_DIR}/scripts/lib/write-evidence-index.py" \
+    --backend-summary "${ARTIFACTS}/test-summary.json" \
+    --android-dir "${ARTIFACTS}/android-journey" \
+    --out "${ARTIFACTS}/EVIDENCE_INDEX.md" \
+    --instrument-exit 0 2>/dev/null || true
+fi
 
 echo "Evidência registrada em ${MANIFEST}"
