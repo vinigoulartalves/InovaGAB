@@ -80,7 +80,7 @@ public sealed class Sprint2JornadaHttpE2ETests
         var ideiaAprovada = (await aprovar.Content.ReadFromJsonAsync<IdeiaDetalheDto>(IntegrationTestJson.Options))!;
 
         var gestorId = gestor.Usuario.Id;
-        var conversao = await client.PostAsJsonAsync($"/api/v1/ideias/{ideiaAprovada.Id}/projeto", new
+        var conversaoRequest = new
         {
             versao = ideiaAprovada.Versao,
             nome = "Projeto E2E",
@@ -93,11 +93,14 @@ public sealed class Sprint2JornadaHttpE2ETests
             reducaoCustos = 0m,
             ganhoProdutividade = 5m,
             prazo = DateOnly.FromDateTime(DateTime.UtcNow.AddMonths(3))
-        });
+        };
+        var conversao = await client.PostAsJsonAsync($"/api/v1/ideias/{ideiaAprovada.Id}/projeto", conversaoRequest);
         conversao.EnsureSuccessStatusCode();
         var projeto = (await conversao.Content.ReadFromJsonAsync<ProjetoDetalheDto>(IntegrationTestJson.Options))!;
 
-        var segundaConversao = await client.PostAsJsonAsync($"/api/v1/ideias/{ideiaAprovada.Id}/projeto", new { versao = 99 });
+        var segundaConversao = await client.PostAsJsonAsync(
+            $"/api/v1/ideias/{ideiaAprovada.Id}/projeto",
+            conversaoRequest);
         Assert.Equal(HttpStatusCode.Conflict, segundaConversao.StatusCode);
 
         var update = await client.PutAsJsonAsync($"/api/v1/projetos/{projeto.Id}", new ProjetoUpdateRequestDto
