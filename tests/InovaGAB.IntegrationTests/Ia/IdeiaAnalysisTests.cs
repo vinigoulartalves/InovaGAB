@@ -153,7 +153,9 @@ public sealed class IdeiaAnalysisTests
         var analise = (await analiseResp.Content.ReadFromJsonAsync<AnaliseIaDetalheDto>(IntegrationTestJson.Options))!;
 
         Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", operador.AccessToken);
-        var ideia = await Client.GetFromJsonAsync<IdeiaDetalheDto>($"/api/v1/ideias/{ideiaId}");
+        var ideia = await Client.GetFromJsonAsync<IdeiaDetalheDto>(
+            $"/api/v1/ideias/{ideiaId}",
+            IntegrationTestJson.Options);
         var update = await Client.PutAsJsonAsync($"/api/v1/ideias/{ideiaId}", new IdeiaUpdateRequestDto
         {
             Versao = ideia!.Versao,
@@ -164,7 +166,9 @@ public sealed class IdeiaAnalysisTests
         update.EnsureSuccessStatusCode();
 
         Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", gestor.AccessToken);
-        var historico = await Client.GetFromJsonAsync<PagedResultDto<AnaliseIaResumoDto>>($"/api/v1/ideias/{ideiaId}/analises-ia");
+        var historico = await Client.GetFromJsonAsync<PagedResultDto<AnaliseIaResumoDto>>(
+            $"/api/v1/ideias/{ideiaId}/analises-ia",
+            IntegrationTestJson.Options);
         Assert.True(historico!.Items.First(i => i.Id == analise.Id).Desatualizada);
     }
 
