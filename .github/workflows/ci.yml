@@ -114,8 +114,10 @@ jobs:
           arch: x86_64
           profile: pixel_6
           script: |
-            set -euo pipefail
-            set -a && source .env && set +a
+            set -eu
+            set -a
+            . ./.env
+            set +a
             COMMIT="${{ github.sha }}"
             mkdir -p artifacts/android-journey
             set +e
