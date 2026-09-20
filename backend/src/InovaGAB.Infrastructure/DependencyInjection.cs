@@ -1,6 +1,11 @@
+using InovaGAB.Application.Auth;
+using InovaGAB.Domain.Usuarios;
+using InovaGAB.Infrastructure.Auth;
 using InovaGAB.Infrastructure.Configuration;
 using InovaGAB.Infrastructure.Hosting;
 using InovaGAB.Infrastructure.Persistence;
+using InovaGAB.Infrastructure.Seed;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -38,6 +43,13 @@ public static class DependencyInjection
         });
 
         services.AddHostedService<MongoInitializationHostedService>();
+        services.AddHostedService<DevDataSeedHostedService>();
+
+        services.AddSingleton<TimeProvider>(TimeProvider.System);
+        services.AddSingleton<PasswordHasher<Usuario>>();
+        services.AddScoped<JwtAccessTokenFactory>();
+        services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<DevDataSeeder>();
 
         return services;
     }

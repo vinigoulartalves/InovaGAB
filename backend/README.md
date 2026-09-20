@@ -48,6 +48,20 @@ dotnet test InovaGAB.sln -c Release
 
 Teste EF↔Mongo: `tests/InovaGAB.IntegrationTests/Persistence/MongoEfCoreCrudTests.cs` — requer `MONGODB_URI` (recomendado: `docker compose --profile tests run --rm test-runner`).
 
+## Autenticação (etapa 3)
+
+| Método | Rota | Descrição |
+|---|---|---|
+| POST | `/api/v1/auth/login` | Email/senha → access + refresh (rate limit por IP) |
+| POST | `/api/v1/auth/refresh` | Rotação de refresh (uso único) |
+| POST | `/api/v1/auth/logout` | Revoga refresh (idempotente) |
+| GET | `/api/v1/auth/me` | Perfil JWT |
+| GET | `/api/v1/usuarios/responsaveis` | Gestores ativos (role GESTOR) |
+
+- Senhas: `PasswordHasher<Usuario>` (`Microsoft.Extensions.Identity.Core`), hash **nunca** na API nem em logs.
+- JWT: assinatura, issuer, audience, expiração (~15 min). **Access token emitido permanece válido até expirar**; logout revoga apenas o refresh (sem blacklist de access token nesta versão).
+- Seed demo idempotente (`Seed:Enabled`, não em Production): contas `*@inovagab.local` com senhas em `DEV_PASSWORD_*` no `.env`.
+
 ## Health
 
 - `GET /health/live` — processo

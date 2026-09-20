@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using InovaGAB.Api.Auth;
 using InovaGAB.Api.Health;
 using InovaGAB.Api.Middleware;
 using InovaGAB.Application;
@@ -53,12 +54,29 @@ builder.Services.AddSwaggerGen(c =>
     {
         Title = "InovaGAB API",
         Version = "v1",
-        Description = "Sprint 2 — fundação. Contrato completo em docs/sprint2/openapi.yaml."
+        Description = "Sprint 2 — autenticação implementada (etapa 3). JWT emitido permanece válido até expirar; logout revoga apenas refresh."
+    });
+    c.AddSecurityDefinition("bearerAuth", new OpenApiSecurityScheme
+    {
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT"
+    });
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "bearerAuth" }
+            },
+            Array.Empty<string>()
+        }
     });
 });
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddInovaGabAuthentication(builder.Configuration);
 
 builder.Services.AddHealthChecks()
     .AddCheck<MongoReadinessHealthCheck>("mongodb", tags: ["ready"]);
@@ -66,6 +84,8 @@ builder.Services.AddHealthChecks()
 var app = builder.Build();
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
+app.UseMiddleware<AuthExceptionMiddleware>();
+app.UseRateLimiter();
 
 if (app.Environment.IsDevelopment())
 {
@@ -92,6 +112,9 @@ app.MapHealthChecks("/health/ready", new HealthCheckOptions
         await context.Response.WriteAsJsonAsync(payload);
     }
 }).AllowAnonymous();
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapControllers();
 

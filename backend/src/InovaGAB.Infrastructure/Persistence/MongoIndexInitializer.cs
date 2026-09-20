@@ -33,6 +33,18 @@ public sealed class MongoIndexInitializer
 
         await probes.Indexes.CreateOneAsync(indexModel, cancellationToken: cancellationToken);
 
+        var usuarios = database.GetCollection<MongoDB.Bson.BsonDocument>("usuarios");
+        var usuarioEmailIndex = new CreateIndexModel<MongoDB.Bson.BsonDocument>(
+            Builders<MongoDB.Bson.BsonDocument>.IndexKeys.Ascending("emailNormalizado"),
+            new CreateIndexOptions { Name = "ux_usuarios_email_normalizado", Unique = true });
+        await usuarios.Indexes.CreateOneAsync(usuarioEmailIndex, cancellationToken: cancellationToken);
+
+        var refreshTokens = database.GetCollection<MongoDB.Bson.BsonDocument>("refresh_tokens");
+        var refreshHashIndex = new CreateIndexModel<MongoDB.Bson.BsonDocument>(
+            Builders<MongoDB.Bson.BsonDocument>.IndexKeys.Ascending("tokenHash"),
+            new CreateIndexOptions { Name = "ux_refresh_tokens_token_hash", Unique = true });
+        await refreshTokens.Indexes.CreateOneAsync(refreshHashIndex, cancellationToken: cancellationToken);
+
         _logger.LogInformation(
             "MongoDB indexes ensured for database {Database}",
             _options.DatabaseName);

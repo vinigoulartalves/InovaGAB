@@ -120,6 +120,8 @@ Após exclusão bem-sucedida, o recurso permanece no banco com `excluidaEm` pree
 
 **401:** credenciais inválidas (mensagem genérica). **429:** muitas tentativas.
 
+> **Nota (implementação etapa 3):** o access token JWT permanece aceito até `expiresAt` após emissão. Logout revoga apenas o refresh; não há blacklist de access token nesta versão.
+
 ### 3.2 `POST /api/v1/auth/refresh`
 
 ```json

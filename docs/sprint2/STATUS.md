@@ -1,100 +1,77 @@
 # InovaGAB Sprint 2 — STATUS
 
 **Atualizado em:** 2026-09-20 (UTC)  
-**Etapa atual:** 2 — Fundação backend e ambiente  
-**Branch de trabalho:** `cursor/sprint2-backend-foundation-befe`
+**Etapa atual:** 3 — Autenticação e autorização  
+**Branch:** `cursor/sprint2-backend-foundation-befe` (continuação)
 
 ---
 
-## 1. Resumo da etapa 2
+## 1. Resumo etapa 3
 
-| Item | Estado | Evidência |
-|---|---|---|
-| Solution `backend/InovaGAB.sln` (Api/Application/Domain/Infrastructure) | **Implementado** | Build Release OK |
-| CPM + lock files | **Implementado** | `/Directory.Packages.props`, `packages.lock.json` por projeto |
-| EF Core Mongo + driver (índices idempotentes) | **Implementado** | `InovaGabDbContext`, `MongoIndexInitializer` |
-| Swagger, ProblemDetails, traceId, middleware de erros | **Implementado** | `Program.cs`, `ExceptionHandlingMiddleware` |
-| Health `/health/live`, `/health/ready` | **Implementado** | Sem dependência de Gemini |
-| Docker Compose + Dockerfile + rs0 init | **Implementado** (arquivos) | `docker-compose.yml`, `infra/mongo/init-replica-set.sh` |
-| `.env.example`, `setup-dev.sh` / `.ps1` | **Implementado** | `.env` gerado localmente (não versionado) |
-| Teste integração EF CRUD | **Implementado, não executado com Mongo** | Ver §4 |
-| Módulos de negócio (auth, CRUDs) | **Pendente** | Etapa 3+ |
-
----
-
-## 2. Versões e comandos executados
-
-| Ferramenta | Versão observada |
+| Item | Estado |
 |---|---|
-| .NET SDK | 8.0.425 |
-| `Microsoft.EntityFrameworkCore` | 8.0.30 |
-| `MongoDB.EntityFrameworkCore` | 8.4.4 |
-| `MongoDB.Driver` | 3.11.2 |
+| `POST /api/v1/auth/login` | **Implementado** (+ rate limit IP) |
+| `POST /api/v1/auth/refresh` | **Implementado** (rotação, 409 reutilização) |
+| `POST /api/v1/auth/logout` | **Implementado** (idempotente) |
+| `GET /api/v1/auth/me` | **Implementado** |
+| `GET /api/v1/usuarios/responsaveis` | **Implementado** (policy GESTOR) |
+| Seed demo idempotente | **Implementado** (`DevDataSeeder`, senhas via `.env`) |
+| Índice único `emailNormalizado` | **Implementado** (driver) |
+| Testes `WebApplicationFactory` + Mongo | **Implementados** — execução requer `MONGODB_URI` |
+| CRUDs negócio (ideias, etc.) | **Pendente** (404 — teste registra pendência) |
 
-**Comandos (agente Cloud, 2026-09-20):**
+---
+
+## 2. Segurança documentada
+
+- **JWT access** válido até `exp`; **não há revogação instantânea** do access token — apenas expiração natural.
+- **Logout** revoga o **refresh** (hash no MongoDB).
+- Login falho: mensagem genérica *Credenciais inválidas* (401).
+- Sem cadastro público; role **não** aceita do cliente no login.
+
+---
+
+## 3. Contas demo (seed)
+
+Criadas **uma vez** se não existirem (`Demo = true`), senhas em:
+
+- `DEV_PASSWORD_OPERADOR1` → `operador1@inovagab.local`
+- `DEV_PASSWORD_OPERADOR2` → `operador2@inovagab.local`
+- `DEV_PASSWORD_GESTOR` → `gestor@inovagab.local`
+- `DEV_PASSWORD_LIDER` → `lider@inovagab.local`
+
+Geradas por `scripts/setup-dev.sh` — **não** commitar `.env`.
+
+---
+
+## 4. Testes executados (agente Cloud)
 
 ```bash
 export PATH="$HOME/.dotnet:$PATH"
-cd backend && dotnet restore InovaGAB.sln && dotnet build -c Release
-dotnet test -c Release --no-build   # falhou: sem MONGODB_URI
-bash scripts/setup-dev.sh           # .env criado
-docker compose config               # BLOQUEADO: docker não instalado no pod
+cd backend && dotnet build -c Release && dotnet test -c Release
 ```
 
----
-
-## 3. Bloqueios de ambiente
-
-| Bloqueio | Impacto |
+| Resultado | Motivo |
 |---|---|
-| **Docker ausente** no pod do agente | Não foi possível `compose up`, health HTTP real nem teste EF com replica set |
-| **MongoDB indisponível** | `MongoEfCoreCrudTests` falhou com mensagem explícita (não foi marcado como sucesso) |
+| Build **OK** | — |
+| Testes auth/EF **falharam** | **MongoDB/Docker indisponível** no pod (`MONGODB_URI` ausente) |
 
-**Validação pendente na sua máquina / CI com Docker:**
+Com Docker:
 
 ```bash
-bash scripts/setup-dev.sh
 docker compose up -d --build
-bash scripts/smoke-test.sh
 docker compose --profile tests run --rm test-runner
 ```
 
 ---
 
-## 4. Teste de integração EF (especificação)
+## 5. Próxima etapa
 
-Arquivo: `tests/InovaGAB.IntegrationTests/Persistence/MongoEfCoreCrudTests.cs`
-
-Valida quando `MONGODB_URI` está definido:
-
-- CRUD real via `InovaGabDbContext`
-- `decimal`, enum, `DateOnly`, `DateTime` UTC
-- Concorrência (`DbUpdateConcurrencyException`)
-- Transação explícita (`BeginTransactionAsync`) — requer replica set
+**Prompt 4:** estratégias e ideias (CRUD, histórico, pontuação).
 
 ---
 
-## 5. Decisões mantidas / novas
+## 6. Referências
 
-1. **Identity completo** ainda não adotado; JWT secret obrigatório no startup (`ValidateOnStart`).
-2. **Seed** configurável; **desabilitado em Production** via validação de opções.
-3. **IA** (`AI:Enabled`) opcional; readiness **não** consulta Gemini.
-4. **Compose** documentado como ambiente de **avaliação**, não produção.
-5. Mongo **não publicado** no host; API em `127.0.0.1:8080` apenas.
-6. Documento técnico `IntegrationProbeDocument` — apenas fundação, não API de negócio.
-
----
-
-## 6. Próxima etapa
-
-**Prompt 3:** autenticação (`login/refresh/logout/me`), `PasswordHasher`, refresh tokens, seed de usuários dev, testes HTTP reais.
-
----
-
-## 7. Documentos relacionados
-
-- [`PLANO_EXECUCAO.md`](./PLANO_EXECUCAO.md)
-- [`CONTRATO_API.md`](./CONTRATO_API.md)
-- [`RASTREABILIDADE.md`](./RASTREABILIDADE.md)
-- [`../../backend/README.md`](../../backend/README.md)
-- [`../../README.md`](../../README.md)
+- [`CONTRATO_API.md`](./CONTRATO_API.md) §3 Autenticação
+- [`backend/README.md`](../../backend/README.md) § Autenticação

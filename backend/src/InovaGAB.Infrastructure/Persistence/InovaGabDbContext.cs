@@ -1,4 +1,6 @@
+using InovaGAB.Domain.Auth;
 using InovaGAB.Domain.Probe;
+using InovaGAB.Domain.Usuarios;
 using Microsoft.EntityFrameworkCore;
 using MongoDB.EntityFrameworkCore.Extensions;
 
@@ -13,6 +15,10 @@ public sealed class InovaGabDbContext : DbContext
 
     public DbSet<IntegrationProbeDocument> IntegrationProbes => Set<IntegrationProbeDocument>();
 
+    public DbSet<Usuario> Usuarios => Set<Usuario>();
+
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -22,6 +28,20 @@ public sealed class InovaGabDbContext : DbContext
             entity.ToCollection("integration_probes");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Amount).HasPrecision(18, 4);
+            entity.Property(e => e.Versao).IsConcurrencyToken();
+        });
+
+        modelBuilder.Entity<Usuario>(entity =>
+        {
+            entity.ToCollection("usuarios");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.EmailNormalizado).IsRequired();
+        });
+
+        modelBuilder.Entity<RefreshToken>(entity =>
+        {
+            entity.ToCollection("refresh_tokens");
+            entity.HasKey(e => e.Id);
             entity.Property(e => e.Versao).IsConcurrencyToken();
         });
     }

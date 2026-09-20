@@ -59,6 +59,10 @@ services:
       AI__ApiKey: ${AI_API_KEY:-}
       AI__Model: ${AI_MODEL:-gemini-2.0-flash}
       Seed__Enabled: ${SEED_ENABLED:-true}
+      DEV_PASSWORD_OPERADOR1: ${DEV_PASSWORD_OPERADOR1}
+      DEV_PASSWORD_OPERADOR2: ${DEV_PASSWORD_OPERADOR2}
+      DEV_PASSWORD_GESTOR: ${DEV_PASSWORD_GESTOR}
+      DEV_PASSWORD_LIDER: ${DEV_PASSWORD_LIDER}
     ports:
       - "127.0.0.1:8080:8080"
     healthcheck:
