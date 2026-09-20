@@ -148,10 +148,10 @@ public sealed class ProjetosRelatoriosRankingTests
         Assert.Equal(1100m, dashboard.LucroTotal);
         Assert.Equal(36.6667m, dashboard.RoiPercentual);
 
+        Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", gestor.AccessToken);
         var gestorDash = await Client.GetAsync("/api/v1/relatorios/dashboard");
         Assert.Equal(HttpStatusCode.Forbidden, gestorDash.StatusCode);
 
-        Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", gestor.AccessToken);
         var zeroInv = await Client.PostAsJsonAsync("/api/v1/projetos", new ProjetoCreateRequestDto
         {
             Nome = "Zero investimento",
