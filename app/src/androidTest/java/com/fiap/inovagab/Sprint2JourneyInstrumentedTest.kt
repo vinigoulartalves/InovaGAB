@@ -60,9 +60,6 @@ class Sprint2JourneyInstrumentedTest {
 
     @Before
     fun clearDataAndRequireApi() {
-        val instr = InstrumentationRegistry.getInstrumentation()
-        instr.uiAutomation.executeShellCommand("pm clear ${instr.targetContext.packageName}").close()
-        composeRule.activity
         requireBackend()
         composeRule.waitForIdle()
     }
