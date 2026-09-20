@@ -22,11 +22,6 @@ public sealed class InovaGabWebApplicationFactory : WebApplicationFactory<Progra
     {
         builder.UseEnvironment("Development");
 
-        foreach (var (key, value) in _settings)
-        {
-            builder.UseSetting(key, value ?? string.Empty);
-        }
-
         builder.ConfigureServices(services =>
         {
             ConfigureTestServices?.Invoke(services);
@@ -61,5 +56,11 @@ public sealed class InovaGabWebApplicationFactory : WebApplicationFactory<Progra
         builder.UseSetting("Jwt:RefreshTokenDays", "7");
         builder.UseSetting("Seed:Enabled", "false");
         builder.UseSetting("AI:Enabled", "false");
+
+        // Per-test settings must win over the safe defaults above.
+        foreach (var (key, value) in _settings)
+        {
+            builder.UseSetting(key, value ?? string.Empty);
+        }
     }
 }
