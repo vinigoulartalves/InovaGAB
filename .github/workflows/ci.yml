@@ -113,35 +113,7 @@ jobs:
           api-level: 34
           arch: x86_64
           profile: pixel_6
-          script: |
-            set -eu
-            set -a
-            . ./.env
-            set +a
-            COMMIT="${{ github.sha }}"
-            mkdir -p artifacts/android-journey
-            set +e
-            ./gradlew :app:connectedDebugAndroidTest \
-              -Pandroid.testInstrumentationRunnerArguments.class=com.fiap.inovagab.Sprint2JourneyInstrumentedTest \
-              -Pandroid.testInstrumentationRunnerArguments.gitCommit="$COMMIT" \
-              -Pandroid.testInstrumentationRunnerArguments.apiBaseUrl="http://10.0.2.2:8080/" \
-              -Pandroid.testInstrumentationRunnerArguments.operador1Email="operador1@inovagab.local" \
-              -Pandroid.testInstrumentationRunnerArguments.operador1Password="$DEV_PASSWORD_OPERADOR1" \
-              -Pandroid.testInstrumentationRunnerArguments.gestorEmail="gestor@inovagab.local" \
-              -Pandroid.testInstrumentationRunnerArguments.gestorPassword="$DEV_PASSWORD_GESTOR" \
-              -Pandroid.testInstrumentationRunnerArguments.liderEmail="lider@inovagab.local" \
-              -Pandroid.testInstrumentationRunnerArguments.liderPassword="$DEV_PASSWORD_LIDER" \
-              --no-daemon
-            INSTRUMENT_EXIT=$?
-            set -e
-
-            REMOTE_DIR="/sdcard/Android/data/com.fiap.inovagab/files/sprint2-evidence/$COMMIT"
-            adb pull "$REMOTE_DIR" artifacts/android-journey/screenshots || true
-            python3 scripts/lib/write-evidence-index.py \
-              --android-dir artifacts/android-journey \
-              --out artifacts/EVIDENCE_INDEX.md \
-              --instrument-exit "$INSTRUMENT_EXIT" || true
-            exit "$INSTRUMENT_EXIT"
+          script: bash scripts/run-android-journeys.sh "${{ github.sha }}"
 
       - name: Complete evidence index if emulator setup failed
         if: always()
