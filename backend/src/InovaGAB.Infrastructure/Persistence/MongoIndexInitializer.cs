@@ -54,6 +54,22 @@ public sealed class MongoIndexInitializer
             new CreateIndexOptions { Name = "ux_eventos_pontuacao_autor_ideia_tipo", Unique = true });
         await eventos.Indexes.CreateOneAsync(eventoUnique, cancellationToken: cancellationToken);
 
+        var projetos = database.GetCollection<MongoDB.Bson.BsonDocument>("projetos");
+        var projetoIdeiaIndex = new CreateIndexModel<MongoDB.Bson.BsonDocument>(
+            Builders<MongoDB.Bson.BsonDocument>.IndexKeys.Ascending("ideiaId"),
+            new CreateIndexOptions<MongoDB.Bson.BsonDocument>
+            {
+                Name = "ux_projetos_ideia_id_parcial",
+                Unique = true,
+                PartialFilterExpression = new MongoDB.Bson.BsonDocument("ideiaId", new MongoDB.Bson.BsonDocument
+                {
+                    { "$exists", true },
+                    { "$type", "string" },
+                    { "$gt", "" }
+                })
+            });
+        await projetos.Indexes.CreateOneAsync(projetoIdeiaIndex, cancellationToken: cancellationToken);
+
         _logger.LogInformation(
             "MongoDB indexes ensured for database {Database}",
             _options.DatabaseName);

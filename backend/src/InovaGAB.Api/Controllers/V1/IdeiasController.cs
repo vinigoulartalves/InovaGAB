@@ -3,6 +3,8 @@ using InovaGAB.Api.Http;
 using InovaGAB.Application.Common;
 using InovaGAB.Application.Ideias;
 using InovaGAB.Application.Ideias.Dtos;
+using InovaGAB.Application.Projetos;
+using InovaGAB.Application.Projetos.Dtos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -14,8 +16,13 @@ namespace InovaGAB.Api.Controllers.V1;
 public sealed class IdeiasController : ControllerBase
 {
     private readonly IIdeiaService _service;
+    private readonly IProjetoService _projetoService;
 
-    public IdeiasController(IIdeiaService service) => _service = service;
+    public IdeiasController(IIdeiaService service, IProjetoService projetoService)
+    {
+        _service = service;
+        _projetoService = projetoService;
+    }
 
     [HttpGet]
     public Task<PagedResultDto<IdeiaResumoDto>> List(
@@ -80,5 +87,21 @@ public sealed class IdeiasController : ControllerBase
     {
         var gestorId = CurrentUserAccessor.GetUserId(User);
         return _service.AvaliarAsync(id, request, gestorId, cancellationToken);
+    }
+
+    [HttpPost("{id}/projeto")]
+    [Authorize(Policy = AuthPolicies.Gestor)]
+    [ProducesResponseType(typeof(ProjetoDetalheDto), StatusCodes.Status201Created)]
+    public async Task<ActionResult<ProjetoDetalheDto>> ConverterEmProjeto(
+        string id,
+        [FromBody] ConversaoIdeiaProjetoRequestDto request,
+        CancellationToken cancellationToken)
+    {
+        var projeto = await _projetoService.ConverterIdeiaAsync(id, request, cancellationToken);
+        return CreatedAtAction(
+            nameof(ProjetosController.Get),
+            "Projetos",
+            new { id = projeto.Id },
+            projeto);
     }
 }

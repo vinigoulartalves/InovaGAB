@@ -48,6 +48,14 @@ dotnet test InovaGAB.sln -c Release
 
 Teste EF↔Mongo: `tests/InovaGAB.IntegrationTests/Persistence/MongoEfCoreCrudTests.cs` — requer `MONGODB_URI` (recomendado: `docker compose --profile tests run --rm test-runner`).
 
+## Projetos, relatórios e ranking (etapa 5)
+
+- `GET/POST/PUT/DELETE /api/v1/projetos` — gestor CRUD; líder consulta; operador 403.
+- `POST /api/v1/ideias/{id}/projeto` — conversão transacional (ideia `APROVADA`, estratégia vigente).
+- `GET /api/v1/relatorios/*` — apenas **LIDER**; agregações Mongo (`RelatorioRepository`).
+- `GET /api/v1/ranking` — pontos por eventos, sem e-mail.
+- Seed demo: projetos A/B (`1000/1500` + `2000/2600` → lucro `1100`, ROI agregado ~`36,6667%`).
+
 ## Vigência de estratégias (etapa 4)
 
 Datas `inicioVigencia` / `fimVigencia` são **datas civis**. O cálculo de “hoje” usa o fuso **`America/Sao_Paulo`** via `IVigenciaClock` (relógio injetável `TimeProvider` para UTC).

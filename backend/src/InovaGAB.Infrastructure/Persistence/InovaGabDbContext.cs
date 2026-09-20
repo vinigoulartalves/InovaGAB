@@ -1,6 +1,7 @@
 using InovaGAB.Domain.Auth;
 using InovaGAB.Domain.Estrategias;
 using InovaGAB.Domain.Ideias;
+using InovaGAB.Domain.Projetos;
 using InovaGAB.Domain.Pontuacao;
 using InovaGAB.Domain.Probe;
 using InovaGAB.Domain.Usuarios;
@@ -29,6 +30,8 @@ public sealed class InovaGabDbContext : DbContext
     public DbSet<Ideia> Ideias => Set<Ideia>();
 
     public DbSet<EventoPontuacao> EventosPontuacao => Set<EventoPontuacao>();
+
+    public DbSet<Projeto> Projetos => Set<Projeto>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -81,6 +84,17 @@ public sealed class InovaGabDbContext : DbContext
         {
             entity.ToCollection("eventos_pontuacao");
             entity.HasKey(e => e.Id);
+        });
+
+        modelBuilder.Entity<Projeto>(entity =>
+        {
+            entity.ToCollection("projetos");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Investimento).HasPrecision(18, 4);
+            entity.Property(e => e.RetornoFinanceiro).HasPrecision(18, 4);
+            entity.Property(e => e.ReducaoCustos).HasPrecision(18, 4);
+            entity.Property(e => e.GanhoProdutividade).HasPrecision(18, 4);
+            entity.Property(e => e.Versao).IsConcurrencyToken();
         });
     }
 }

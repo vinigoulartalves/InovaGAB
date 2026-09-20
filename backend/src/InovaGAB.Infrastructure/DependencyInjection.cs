@@ -1,6 +1,9 @@
 using InovaGAB.Application.Auth;
 using InovaGAB.Application.Estrategias;
 using InovaGAB.Application.Ideias;
+using InovaGAB.Application.Projetos;
+using InovaGAB.Application.Ranking;
+using InovaGAB.Application.Relatorios;
 using InovaGAB.Domain.Usuarios;
 using InovaGAB.Infrastructure.Auth;
 using InovaGAB.Infrastructure.Configuration;
@@ -8,6 +11,9 @@ using InovaGAB.Infrastructure.Hosting;
 using InovaGAB.Infrastructure.Persistence;
 using InovaGAB.Infrastructure.Estrategias;
 using InovaGAB.Infrastructure.Ideias;
+using InovaGAB.Infrastructure.Projetos;
+using InovaGAB.Infrastructure.Ranking;
+using InovaGAB.Infrastructure.Relatorios;
 using InovaGAB.Infrastructure.Pontuacao;
 using InovaGAB.Infrastructure.Seed;
 using InovaGAB.Infrastructure.Time;
@@ -61,6 +67,10 @@ public static class DependencyInjection
         services.AddScoped<PontuacaoService>();
         services.AddScoped<IEstrategiaService, EstrategiaService>();
         services.AddScoped<IIdeiaService, IdeiaService>();
+        services.AddScoped<IProjetoService, ProjetoService>();
+        services.AddScoped<RelatorioRepository>();
+        services.AddScoped<IRelatorioService, RelatorioService>();
+        services.AddScoped<IRankingService, RankingService>();
 
         return services;
     }

@@ -194,16 +194,16 @@ public sealed class AuthEndpointsTests
     }
 
     [Fact]
-    public async Task Endpoints_negocio_pendentes_retornam_404()
+    public async Task Operador_nao_acessa_projetos()
     {
         EnsureMongo();
         await AuthTestSeed.SeedAsync(_factory!.Services);
-        var login = await LoginAsync(AuthTestSeed.GestorEmail);
+        var login = await LoginAsync(AuthTestSeed.OperadorEmail);
         Client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", login.AccessToken);
 
         var projetos = await Client.GetAsync("/api/v1/projetos");
-        Assert.Equal(HttpStatusCode.NotFound, projetos.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, projetos.StatusCode);
     }
 
     private async Task<LoginResponseDto> LoginAsync(string email)
