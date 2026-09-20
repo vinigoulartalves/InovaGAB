@@ -29,6 +29,7 @@ if [[ "$package_ready" -ne 1 ]]; then
   exit 1
 fi
 
+adb reverse tcp:8080 tcp:8080
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 adb install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
 
@@ -36,7 +37,7 @@ set +e
 adb shell am instrument -w -r \
   -e class com.fiap.inovagab.Sprint2JourneyInstrumentedTest \
   -e gitCommit "$commit" \
-  -e apiBaseUrl "http://10.0.2.2:8080/" \
+  -e apiBaseUrl "http://127.0.0.1:8080/" \
   -e operador1Email "operador1@inovagab.local" \
   -e operador1Password "$DEV_PASSWORD_OPERADOR1" \
   -e gestorEmail "gestor@inovagab.local" \
@@ -48,14 +49,17 @@ adb shell am instrument -w -r \
 instrument_exit=${PIPESTATUS[0]}
 set -e
 
-if grep -Eq "FAILURES!!!|INSTRUMENTATION_FAILED|INSTRUMENTATION_CODE: -1" artifacts/android-journey/instrumentation.txt; then
+if grep -Eq "FAILURES!!!|INSTRUMENTATION_FAILED|AssumptionViolatedException" artifacts/android-journey/instrumentation.txt; then
   instrument_exit=1
 fi
 
 mkdir -p artifacts/android-journey/screenshots
-adb exec-out run-as com.fiap.inovagab \
-  tar -C files -cf - "sprint2-evidence/$commit" \
-  | tar -C artifacts/android-journey/screenshots -xf - || true
+evidence_tar="artifacts/android-journey/evidence.tar"
+if adb exec-out run-as com.fiap.inovagab \
+  tar -C files -cf - "sprint2-evidence/$commit" > "$evidence_tar"; then
+  tar -C artifacts/android-journey/screenshots -xf "$evidence_tar" || true
+fi
+rm -f "$evidence_tar"
 python3 scripts/lib/write-evidence-index.py \
   --android-dir artifacts/android-journey \
   --out artifacts/EVIDENCE_INDEX.md \
