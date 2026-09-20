@@ -11,6 +11,8 @@ internal static class AuthTestSeed
 {
     public const string OperadorEmail = "operador-test@inovagab.local";
     public const string GestorEmail = "gestor-test@inovagab.local";
+    public const string LiderEmail = "lider-test@inovagab.local";
+    public const string Operador2Email = "operador2-test@inovagab.local";
     public const string TestPassword = "TestPassword123!";
 
     public static async Task SeedAsync(IServiceProvider services)
@@ -29,8 +31,17 @@ internal static class AuthTestSeed
 
         if (!await db.Usuarios.AnyAsync(u => u.EmailNormalizado == AuthService.NormalizeEmail(GestorEmail)))
         {
-            var gestor = CreateUser("Gestor Teste", GestorEmail, PerfilUsuario.GESTOR, hasher);
-            db.Usuarios.Add(gestor);
+            db.Usuarios.Add(CreateUser("Gestor Teste", GestorEmail, PerfilUsuario.GESTOR, hasher));
+        }
+
+        if (!await db.Usuarios.AnyAsync(u => u.EmailNormalizado == AuthService.NormalizeEmail(LiderEmail)))
+        {
+            db.Usuarios.Add(CreateUser("Líder Teste", LiderEmail, PerfilUsuario.LIDER, hasher));
+        }
+
+        if (!await db.Usuarios.AnyAsync(u => u.EmailNormalizado == AuthService.NormalizeEmail(Operador2Email)))
+        {
+            db.Usuarios.Add(CreateUser("Operador 2 Teste", Operador2Email, PerfilUsuario.OPERADOR, hasher));
         }
 
         await db.SaveChangesAsync();

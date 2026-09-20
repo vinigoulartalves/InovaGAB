@@ -45,6 +45,15 @@ public sealed class MongoIndexInitializer
             new CreateIndexOptions { Name = "ux_refresh_tokens_token_hash", Unique = true });
         await refreshTokens.Indexes.CreateOneAsync(refreshHashIndex, cancellationToken: cancellationToken);
 
+        var eventos = database.GetCollection<MongoDB.Bson.BsonDocument>("eventos_pontuacao");
+        var eventoUnique = new CreateIndexModel<MongoDB.Bson.BsonDocument>(
+            Builders<MongoDB.Bson.BsonDocument>.IndexKeys
+                .Ascending("autorId")
+                .Ascending("ideiaId")
+                .Ascending("tipo"),
+            new CreateIndexOptions { Name = "ux_eventos_pontuacao_autor_ideia_tipo", Unique = true });
+        await eventos.Indexes.CreateOneAsync(eventoUnique, cancellationToken: cancellationToken);
+
         _logger.LogInformation(
             "MongoDB indexes ensured for database {Database}",
             _options.DatabaseName);

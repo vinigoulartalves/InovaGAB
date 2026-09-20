@@ -48,6 +48,10 @@ dotnet test InovaGAB.sln -c Release
 
 Teste EF↔Mongo: `tests/InovaGAB.IntegrationTests/Persistence/MongoEfCoreCrudTests.cs` — requer `MONGODB_URI` (recomendado: `docker compose --profile tests run --rm test-runner`).
 
+## Vigência de estratégias (etapa 4)
+
+Datas `inicioVigencia` / `fimVigencia` são **datas civis**. O cálculo de “hoje” usa o fuso **`America/Sao_Paulo`** via `IVigenciaClock` (relógio injetável `TimeProvider` para UTC).
+
 ## Autenticação (etapa 3)
 
 | Método | Rota | Descrição |

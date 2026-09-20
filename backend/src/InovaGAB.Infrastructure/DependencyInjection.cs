@@ -1,10 +1,16 @@
 using InovaGAB.Application.Auth;
+using InovaGAB.Application.Estrategias;
+using InovaGAB.Application.Ideias;
 using InovaGAB.Domain.Usuarios;
 using InovaGAB.Infrastructure.Auth;
 using InovaGAB.Infrastructure.Configuration;
 using InovaGAB.Infrastructure.Hosting;
 using InovaGAB.Infrastructure.Persistence;
+using InovaGAB.Infrastructure.Estrategias;
+using InovaGAB.Infrastructure.Ideias;
+using InovaGAB.Infrastructure.Pontuacao;
 using InovaGAB.Infrastructure.Seed;
+using InovaGAB.Infrastructure.Time;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -50,6 +56,11 @@ public static class DependencyInjection
         services.AddScoped<JwtAccessTokenFactory>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<DevDataSeeder>();
+        services.AddSingleton<IVigenciaClock, VigenciaClock>();
+        services.AddScoped<VigenciaEvaluator>();
+        services.AddScoped<PontuacaoService>();
+        services.AddScoped<IEstrategiaService, EstrategiaService>();
+        services.AddScoped<IIdeiaService, IdeiaService>();
 
         return services;
     }

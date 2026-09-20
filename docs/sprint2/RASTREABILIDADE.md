@@ -30,7 +30,7 @@ Status de implementação nesta etapa: **documentado** (código e testes nas eta
 
 | ID | Requisito | Endpoint | Tela Android | Teste | Evidência | Pri |
 |---|---|---|---|---|---|---|
-| R-EST-01 | Listar com filtros vigente/categoria | `GET /api/v1/estrategias` | Operador/Gestor/Líder consulta orientações | Filtro vigente | Seed + HTTP | OBR |
+| R-EST-01 | Listar com filtros vigente/categoria | `GET /api/v1/estrategias` | Operador/Gestor/Líder consulta orientações | Filtro vigente | `EstrategiasIdeiasTests` + HTTP | OBR |
 | R-EST-02 | CRUD líder | `POST/PUT/DELETE /api/v1/estrategias` | `OrientacaoFormScreen`, `LiderViewModel` | Role LIDER vs OPERADOR 403 | E2E líder | OBR |
 | R-EST-03 | Histórico imutável | `GET /api/v1/estrategias/{id}/historico` | Tela histórico (prompt 8) | Edição gera entrada | Mongo snapshot | OBR |
 | R-EST-04 | Vigência SP + datas civis | (regra) | Formulário datas | Estratégia vencida bloqueia ideia | Teste relógio injetável | OBR |

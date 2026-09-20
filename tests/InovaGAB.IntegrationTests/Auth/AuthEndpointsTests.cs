@@ -202,8 +202,8 @@ public sealed class AuthEndpointsTests
         Client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", login.AccessToken);
 
-        var ideias = await Client.GetAsync("/api/v1/ideias");
-        Assert.Equal(HttpStatusCode.NotFound, ideias.StatusCode);
+        var projetos = await Client.GetAsync("/api/v1/projetos");
+        Assert.Equal(HttpStatusCode.NotFound, projetos.StatusCode);
     }
 
     private async Task<LoginResponseDto> LoginAsync(string email)

@@ -39,7 +39,7 @@ public static class AuthServiceCollectionExtensions
         services.AddAuthorization(options =>
         {
             options.AddPolicy(AuthPolicies.Operador, policy =>
-                policy.RequireRole("OPERADOR", "GESTOR", "LIDER"));
+                policy.RequireRole("OPERADOR"));
             options.AddPolicy(AuthPolicies.Gestor, policy =>
                 policy.RequireRole("GESTOR"));
             options.AddPolicy(AuthPolicies.Lider, policy =>
