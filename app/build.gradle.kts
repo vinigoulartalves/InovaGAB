@@ -108,6 +108,7 @@ dependencies {
     androidTestImplementation("androidx.test:runner:1.6.2")
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     androidTestImplementation("androidx.test:rules:1.6.1")
+    androidTestImplementation("androidx.test.uiautomator:uiautomator:2.3.0")
     testImplementation("com.squareup.moshi:moshi-kotlin:1.15.1")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
