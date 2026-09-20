@@ -8,6 +8,8 @@ import com.fiap.inovagab.data.repository.AuthRepository
 import com.fiap.inovagab.data.repository.IdeiaRepository
 import com.fiap.inovagab.data.repository.OrientacaoRepository
 import com.fiap.inovagab.data.repository.ProjetoRepository
+import com.fiap.inovagab.core.di.AppViewModelFactory
+import com.fiap.inovagab.data.repository.IaRepository
 import com.fiap.inovagab.data.repository.RelatorioRepository
 import com.fiap.inovagab.data.repository.UserRepository
 
@@ -40,6 +42,12 @@ class InovaGabApp : Application() {
     lateinit var relatorioRepository: RelatorioRepository
         private set
 
+    lateinit var iaRepository: IaRepository
+        private set
+
+    lateinit var viewModelFactory: AppViewModelFactory
+        private set
+
     override fun onCreate() {
         super.onCreate()
         instance = this
@@ -63,7 +71,9 @@ class InovaGabApp : Application() {
         )
         orientacaoRepository = OrientacaoRepository(network.estrategiasApi)
         userRepository = UserRepository(network.rankingApi)
-        relatorioRepository = RelatorioRepository(network.relatoriosApi, network.projetosApi)
+        relatorioRepository = RelatorioRepository(network.relatoriosApi)
+        iaRepository = IaRepository(network.ideiasApi)
+        viewModelFactory = AppViewModelFactory(this)
     }
 
     companion object {

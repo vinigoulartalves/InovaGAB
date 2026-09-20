@@ -1,14 +1,22 @@
 package com.fiap.inovagab.data.remote
 
+import com.fiap.inovagab.data.model.AnaliseIa
+import com.fiap.inovagab.data.model.DashboardReport
+import com.fiap.inovagab.data.model.DistribuicaoPorStatus
+import com.fiap.inovagab.data.model.EstrategiaHistorico
 import com.fiap.inovagab.data.model.Ideia
 import com.fiap.inovagab.data.model.Orientacao
+import com.fiap.inovagab.data.model.SerieInvestimentoRetorno
 import com.fiap.inovagab.data.model.Perfil
 import com.fiap.inovagab.data.model.PrioridadeIdeia
 import com.fiap.inovagab.data.model.Projeto
 import com.fiap.inovagab.data.model.StatusIdeia
 import com.fiap.inovagab.data.model.StatusProjeto
 import com.fiap.inovagab.data.model.User
+import com.fiap.inovagab.data.remote.dto.AnaliseIaDetalheDto
+import com.fiap.inovagab.data.remote.dto.DashboardRelatorioDto
 import com.fiap.inovagab.data.remote.dto.EstrategiaDetalheDto
+import com.fiap.inovagab.data.remote.dto.EstrategiaHistoricoItemDto
 import com.fiap.inovagab.data.remote.dto.EstrategiaResumoDto
 import com.fiap.inovagab.data.remote.dto.IdeiaDetalheDto
 import com.fiap.inovagab.data.remote.dto.IdeiaResumoDto
@@ -39,6 +47,14 @@ fun EstrategiaResumoDto.toOrientacao(): Orientacao = Orientacao(
     id = id,
     titulo = titulo,
     descricao = descricao.orEmpty(),
+    categoria = categoria.orEmpty(),
+    campanha = campanha.orEmpty(),
+    inicioVigencia = inicioVigencia.orEmpty(),
+    fimVigencia = fimVigencia,
+    ativa = ativa ?: true,
+    vigente = vigente ?: false,
+    versao = versao ?: 1,
+    arquivada = !(vigente ?: false) || ativa == false,
     criadoEm = parseInstantMillis(criadoEm)
 )
 
@@ -46,7 +62,66 @@ fun EstrategiaDetalheDto.toOrientacao(): Orientacao = Orientacao(
     id = id,
     titulo = titulo,
     descricao = descricao,
+    categoria = categoria,
+    campanha = campanha,
+    inicioVigencia = inicioVigencia,
+    fimVigencia = fimVigencia,
+    ativa = ativa,
+    vigente = vigente ?: false,
+    versao = versao,
+    arquivada = !excluidaEm.isNullOrBlank() || !(vigente ?: false),
     criadoEm = parseInstantMillis(criadoEm)
+)
+
+fun EstrategiaHistoricoItemDto.toHistorico(): EstrategiaHistorico = EstrategiaHistorico(
+    id = id,
+    versao = versao,
+    acao = acao,
+    atorId = atorId,
+    ocorridoEm = parseInstantMillis(ocorridoEm)
+)
+
+fun AnaliseIaDetalheDto.toAnaliseIa(): AnaliseIa = AnaliseIa(
+    id = id,
+    ideiaId = ideiaId,
+    pontuacaoTotal = pontuacaoTotal,
+    alinhamentoEstrategico = alinhamentoEstrategico,
+    impacto = impacto,
+    viabilidade = viabilidade,
+    prioridadeSugerida = enumValue(prioridadeSugerida, PrioridadeIdeia.MEDIA),
+    justificativa = justificativa,
+    riscos = riscos,
+    melhorias = melhorias,
+    provedor = provedor,
+    modelo = modelo,
+    promptVersion = promptVersion,
+    desatualizada = desatualizada,
+    criadoEm = parseInstantMillis(criadoEm)
+)
+
+fun DashboardRelatorioDto.toDashboardReport(totalProjetos: Int): DashboardReport = DashboardReport(
+    totalProjetos = totalProjetos,
+    investimentoTotal = investimentoTotal.toDouble(),
+    retornoTotal = retornoTotal.toDouble(),
+    lucroObtido = lucroTotal.toDouble(),
+    roiGeral = roiPercentual?.toDouble(),
+    reducaoCustosTotal = reducaoCustosTotal.toDouble(),
+    ganhoProdutividadeMedio = ganhoProdutividadeMedio?.toDouble(),
+    projetosAtrasados = projetosAtrasados,
+    investimentoRetornoPorEstrategia = investimentoRetornoPorEstrategia.map {
+        SerieInvestimentoRetorno(
+            estrategiaId = it.estrategiaId,
+            estrategiaTitulo = it.estrategiaTitulo,
+            investimento = it.investimento.toDouble(),
+            retorno = it.retorno.toDouble()
+        )
+    },
+    distribuicaoPorStatus = distribuicaoPorStatus.map {
+        DistribuicaoPorStatus(
+            status = enumValue(it.status, StatusProjeto.PLANEJADO),
+            quantidade = it.quantidade
+        )
+    }
 )
 
 fun IdeiaResumoDto.toIdeia(): Ideia = Ideia(
