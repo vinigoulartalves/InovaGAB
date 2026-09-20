@@ -1,54 +1,63 @@
 # InovaGAB Sprint 2 — STATUS
 
 **Atualizado em:** 2026-09-20 (UTC)  
-**Etapa atual:** 9 — Testabilidade (scripts, CI, matriz)  
-**Branch:** `cursor/sprint2-testing-befe`
+**Etapa atual:** Documentação e entrega (ZIP, checklist, endpoints)  
+**Branch de trabalho:** `cursor/sprint2-docs-delivery-befe` (base: testabilidade)
 
 ---
 
-## 1. Testabilidade (checkout limpo, sem Android Studio para API)
+## 1. Documentação e entrega
 
 | Item | Estado |
-|---|---|
-| Scripts Bash (`setup`, `dev-up`, `smoke-api`, `test-backend`, `test-android`, `reset-test-databases`, `collect-evidence`) | **Implementado** |
-| Scripts PowerShell (`setup-dev`, `dev-up`, `test-backend`) | **Implementado** |
-| `docker compose` profile `tests` + `test-runner` (sem socket Docker no runner) | **Implementado** |
-| Wait readiness com timeout (`scripts/lib/wait-for-http.sh`) | **Implementado** |
-| Reset banco só `inovagab_test*` com `CONFIRM_RESET_TEST_DB=yes` | **Implementado** |
-| TRX/cobertura em `artifacts/` (gitignored) | **Implementado** |
-| `InovaGAB.UnitTests` (ROI/lucro) | **Implementado** |
-| `Sprint2JornadaHttpE2ETests` | **Implementado** |
-| IA real opt-in (`test-ia-external.sh`, assert sem chave) | **Implementado** |
-| Postman collection + environment template | **Implementado** |
-| `COMO_TESTAR.md` / `MATRIZ_TESTES.md` | **Implementado** |
-| GitHub Actions `.github/workflows/ci.yml` | **Adicionado** (não implica pipeline verde no remoto até rodar) |
-| Android `ApiMessagesTest` + instrumentado smoke | **Implementado** |
-
-### Execução registrada (agente Cloud, 2026-09-20)
-
-| Comando | Resultado |
-|---|---|
-| `dotnet test tests/InovaGAB.UnitTests` | **4 passed** |
-| `bash scripts/test-android.sh` | **OK** (unit 5 tests incl. ApiMessages, lint, APK) |
-| `bash scripts/test-backend.sh` | **Não executado** — Docker indisponível no agente |
-| Commit testabilidade | `2b26485` |
-
-Integração Mongo: executar localmente `bash scripts/test-backend.sh` ou CI GitHub.
+|------|--------|
+| README raiz + `backend/README.md` (pré-requisitos, PS/Bash, EF/Mongo, seed, troubleshooting) | **Implementado** |
+| `ENDPOINTS.md` (rota/método/role/erros) | **Implementado** |
+| `OPENAPI_COMPARACAO.md` + `export-openapi.sh/.ps1` | **Implementado** (export runtime depende de API local) |
+| `APRESENTACAO.md` | **Implementado** (`[NOME]`/`[RM]` pendentes) |
+| PDF/PPT apresentação | **Pendente** |
+| `CHECKLIST_ENTREGA.md` | **Implementado** |
+| `package-delivery.sh/.ps1` + `MANIFEST_ENTREGA.md` | **Implementado** — executar para comprovar ZIP/SHA256 |
+| Divergência Dockerfile SDK 8.0.401 → **8.0.425** | **Corrigido** |
+| Swagger `Program.cs` descrição desatualizada | **Corrigido** |
 
 ---
 
-## 2. Android etapa 8
+## 2. Testabilidade (etapa 9)
 
-Ver branch `cursor/sprint2-android-features-befe` (PR #15). Core library desugaring habilitado para `java.time` em minSdk 24.
+| Item | Estado |
+|------|--------|
+| Scripts Bash/PowerShell, Compose `tests`, matriz, CI | **Implementado** |
+| `dotnet test` unit (4 ROI) | **Executado** — passed |
+| `test-android.sh` | **Executado** — OK |
+| `test-backend.sh` | **Não executado** no agente (sem Docker) |
+
+Branch: `cursor/sprint2-testing-befe` (PR #16).
 
 ---
 
-## 3. Backend etapas 2–6
+## 3. Android etapa 8
 
-Auth, estratégias, ideias, projetos, relatórios, ranking, IA — branch `cursor/sprint2-backend-foundation-befe`.
+REST completo (operador/gestor/líder), dashboard Canvas, IA/conversão — branch `cursor/sprint2-android-features-befe` (PR #15).
 
 ---
 
-## 4. Evidências IA backend
+## 4. Backend etapas 2–6
 
-`docs/sprint2/IA_EVIDENCIA.md` — chamada real Gemini **PENDENTE** sem `AI_API_KEY` opt-in.
+Auth, estratégias, ideias, projetos, relatórios, ranking, IA Gemini — branch `cursor/sprint2-backend-foundation-befe`.
+
+---
+
+## 5. Evidências IA
+
+`docs/sprint2/IA_EVIDENCIA.md` — chamada real Gemini **PENDENTE** sem `AI_API_KEY` opt-in. Modelo documentado: `gemini-2.0-flash`.
+
+---
+
+## 6. Próximos passos (humano)
+
+1. Preencher `[NOME]` e `[RM]` em `APRESENTACAO.md`.  
+2. Exportar PDF/PPT da apresentação.  
+3. Rodar `bash scripts/package-delivery.sh` e anexar ZIPs à entrega.  
+4. Opcional: `export-openapi.sh` após `dev-up` e atualizar comparação.  
+5. Teste IA real + atualizar `IA_EVIDENCIA.md`.  
+6. **Não** publicar na FIAP a partir deste agente.

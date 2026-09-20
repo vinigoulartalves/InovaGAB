@@ -3,7 +3,7 @@
 **Versão do contrato:** 1.0.0 (etapa 1 — especificação; implementação nas etapas 2+)  
 **Base URL (desenvolvimento):** `http://localhost:8080`  
 **Prefixo de negócio:** `/api/v1`  
-**OpenAPI:** [`openapi.yaml`](./openapi.yaml)
+**OpenAPI:** [`openapi.yaml`](./openapi.yaml) · **Implementação:** [`ENDPOINTS.md`](./ENDPOINTS.md) · Comparação: [`OPENAPI_COMPARACAO.md`](./OPENAPI_COMPARACAO.md)
 
 ---
 
