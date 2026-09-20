@@ -37,6 +37,7 @@ jobs:
           docker compose --profile tests run --rm test-runner
           TEST_EXIT=$?
           set -e
+          sudo chown -R "$(id -u):$(id -g)" artifacts
           python3 scripts/lib/parse-trx-results.py artifacts/test-results artifacts/test-summary.json
           python3 scripts/lib/parse-trx-results.py --check artifacts/test-results
           exit "$TEST_EXIT"
