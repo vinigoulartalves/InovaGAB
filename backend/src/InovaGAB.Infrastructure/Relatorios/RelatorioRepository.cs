@@ -30,10 +30,10 @@ public sealed class RelatorioRepository
             new BsonDocument("$group", new BsonDocument
             {
                 { "_id", BsonNull.Value },
-                { "investimento", new BsonDocument("$sum", "$investimento") },
-                { "retorno", new BsonDocument("$sum", "$retornoFinanceiro") },
-                { "reducaoCustos", new BsonDocument("$sum", "$reducaoCustos") },
-                { "ganhoProdutividadeSum", new BsonDocument("$sum", "$ganhoProdutividade") },
+                { "investimento", new BsonDocument("$sum", "$Investimento") },
+                { "retorno", new BsonDocument("$sum", "$RetornoFinanceiro") },
+                { "reducaoCustos", new BsonDocument("$sum", "$ReducaoCustos") },
+                { "ganhoProdutividadeSum", new BsonDocument("$sum", "$GanhoProdutividade") },
                 { "count", new BsonDocument("$sum", 1) }
             })
         };
@@ -54,9 +54,9 @@ public sealed class RelatorioRepository
             new BsonDocument("$match", match),
             new BsonDocument("$group", new BsonDocument
             {
-                { "_id", "$estrategiaId" },
-                { "investimento", new BsonDocument("$sum", "$investimento") },
-                { "retorno", new BsonDocument("$sum", "$retornoFinanceiro") },
+                { "_id", "$EstrategiaId" },
+                { "investimento", new BsonDocument("$sum", "$Investimento") },
+                { "retorno", new BsonDocument("$sum", "$RetornoFinanceiro") },
                 { "quantidade", new BsonDocument("$sum", 1) }
             }),
             new BsonDocument("$sort", new BsonDocument("_id", 1))
@@ -74,7 +74,7 @@ public sealed class RelatorioRepository
             new BsonDocument("$match", match),
             new BsonDocument("$group", new BsonDocument
             {
-                { "_id", "$status" },
+                { "_id", "$Status" },
                 { "quantidade", new BsonDocument("$sum", 1) }
             })
         };
@@ -107,7 +107,7 @@ public sealed class RelatorioRepository
             }).ToList(),
             PorStatus = statusDocs.Select(d => new DistribuicaoStatusAgg
             {
-                Status = Enum.Parse<StatusProjeto>(d["_id"].AsString),
+                Status = ToStatusProjeto(d["_id"]),
                 Quantidade = d["quantidade"].AsInt32
             }).ToList(),
             ProjetosAtrasados = atrasados
@@ -120,8 +120,14 @@ public sealed class RelatorioRepository
         var combined = new BsonDocument("$and", new BsonArray
         {
             match,
-            new BsonDocument("prazo", new BsonDocument("$lt", prazoLimite)),
-            new BsonDocument("status", new BsonDocument("$nin", new BsonArray { "CONCLUIDO", "CANCELADO" }))
+            new BsonDocument("Prazo", new BsonDocument("$lt", prazoLimite)),
+            new BsonDocument("Status", new BsonDocument("$nin", new BsonArray
+            {
+                (int)StatusProjeto.CONCLUIDO,
+                (int)StatusProjeto.CANCELADO,
+                "CONCLUIDO",
+                "CANCELADO"
+            }))
         });
 
         var collection = _database.GetCollection<BsonDocument>("projetos");
@@ -142,7 +148,7 @@ public sealed class RelatorioRepository
         var docs = await estrategias.Find(filter).ToListAsync(cancellationToken);
         return docs.ToDictionary(
             d => d["_id"].AsString,
-            d => d.GetValue("titulo", "").AsString);
+            d => d.GetValue("Titulo", "").AsString);
     }
 
     private static BsonDocument BuildMatch(DashboardFiltroDto filtro)
@@ -151,14 +157,14 @@ public sealed class RelatorioRepository
         {
             new BsonDocument("$or", new BsonArray
             {
-                new BsonDocument("excluidaEmUtc", BsonNull.Value),
-                new BsonDocument("excluidaEmUtc", new BsonDocument("$exists", false))
+                new BsonDocument("ExcluidaEmUtc", BsonNull.Value),
+                new BsonDocument("ExcluidaEmUtc", new BsonDocument("$exists", false))
             })
         };
 
         if (!string.IsNullOrWhiteSpace(filtro.EstrategiaId))
         {
-            clauses.Add(new BsonDocument("estrategiaId", filtro.EstrategiaId));
+            clauses.Add(new BsonDocument("EstrategiaId", filtro.EstrategiaId));
         }
 
         if (!string.IsNullOrWhiteSpace(filtro.ProjetoId))
@@ -169,13 +175,13 @@ public sealed class RelatorioRepository
         if (filtro.Inicio is not null)
         {
             var start = filtro.Inicio.Value.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
-            clauses.Add(new BsonDocument("criadoEmUtc", new BsonDocument("$gte", start)));
+            clauses.Add(new BsonDocument("CriadoEmUtc", new BsonDocument("$gte", start)));
         }
 
         if (filtro.Fim is not null)
         {
             var end = filtro.Fim.Value.AddDays(1).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
-            clauses.Add(new BsonDocument("criadoEmUtc", new BsonDocument("$lt", end)));
+            clauses.Add(new BsonDocument("CriadoEmUtc", new BsonDocument("$lt", end)));
         }
 
         return new BsonDocument("$and", clauses);
@@ -192,6 +198,14 @@ public sealed class RelatorioRepository
             _ => 0m
         };
     }
+
+    private static StatusProjeto ToStatusProjeto(BsonValue value) => value.BsonType switch
+    {
+        BsonType.String => Enum.Parse<StatusProjeto>(value.AsString),
+        BsonType.Int32 => (StatusProjeto)value.AsInt32,
+        BsonType.Int64 => (StatusProjeto)value.AsInt64,
+        _ => throw new InvalidOperationException($"Status de projeto BSON inválido: {value.BsonType}.")
+    };
 
     public sealed class RelatorioAgregado
     {
