@@ -1,58 +1,54 @@
 # InovaGAB Sprint 2 — STATUS
 
 **Atualizado em:** 2026-09-20 (UTC)  
-**Etapa atual:** 8 — Android funcionalidades API real (prompt 8)  
-**Branch Android:** `cursor/sprint2-android-features-befe` (base: `cursor/sprint2-android-retrofit-befe`)
+**Etapa atual:** 9 — Testabilidade (scripts, CI, matriz)  
+**Branch:** `cursor/sprint2-testing-befe`
 
 ---
 
-## 1. Resumo etapa 8 (Android)
+## 1. Testabilidade (checkout limpo, sem Android Studio para API)
 
 | Item | Estado |
 |---|---|
-| Operador: estratégia vigente no formulário, editar/excluir ENVIADA, 409 amigável | **Implementado** |
-| Líder: estratégias categoria/campanha/vigência/status, histórico, arquivadas visíveis | **Implementado** |
-| Gestor: conversão ideia→projeto, selects API, IA na gestão, exclusão projeto | **Implementado** |
-| Dashboard: filtros backend, gráficos Canvas, ROI null = Não aplicável | **Implementado** |
-| API: PUT/DELETE ideias, conversão, analises-ia, histórico, dashboard query params | **Implementado** |
-| DI: `AppViewModelFactory` + `inovaViewModel()` | **Implementado** |
-| `TestTags` estáveis para automação | **Implementado** |
-| `./gradlew :app:assembleDebug` | **OK** (agente Cloud) |
-| `./gradlew :app:testDebugUnitTest` | **OK** |
-| `./gradlew :app:connectedDebugAndroidTest` | **Não executado** (sem emulador/dispositivo conectado no agente) |
-| Jornadas em emulador com evidência de vídeo | **Pendente** (ambiente sem AVD ativo) |
+| Scripts Bash (`setup`, `dev-up`, `smoke-api`, `test-backend`, `test-android`, `reset-test-databases`, `collect-evidence`) | **Implementado** |
+| Scripts PowerShell (`setup-dev`, `dev-up`, `test-backend`) | **Implementado** |
+| `docker compose` profile `tests` + `test-runner` (sem socket Docker no runner) | **Implementado** |
+| Wait readiness com timeout (`scripts/lib/wait-for-http.sh`) | **Implementado** |
+| Reset banco só `inovagab_test*` com `CONFIRM_RESET_TEST_DB=yes` | **Implementado** |
+| TRX/cobertura em `artifacts/` (gitignored) | **Implementado** |
+| `InovaGAB.UnitTests` (ROI/lucro) | **Implementado** |
+| `Sprint2JornadaHttpE2ETests` | **Implementado** |
+| IA real opt-in (`test-ia-external.sh`, assert sem chave) | **Implementado** |
+| Postman collection + environment template | **Implementado** |
+| `COMO_TESTAR.md` / `MATRIZ_TESTES.md` | **Implementado** |
+| GitHub Actions `.github/workflows/ci.yml` | **Adicionado** (não implica pipeline verde no remoto até rodar) |
+| Android `ApiMessagesTest` + instrumentado smoke | **Implementado** |
 
-APK debug gerado: `app/build/outputs/apk/debug/app-debug.apk`
+### Execução registrada (agente Cloud, 2026-09-20)
 
-### Configuração API no dispositivo
+| Comando | Resultado |
+|---|---|
+| `dotnet test tests/InovaGAB.UnitTests` | **4 passed** |
+| `bash scripts/test-android.sh` | **OK** (unit 5 tests incl. ApiMessages, lint, APK) |
+| `bash scripts/test-backend.sh` | **Não executado** — Docker indisponível no agente |
+| Commit | `$(git rev-parse --short HEAD 2>/dev/null)` |
 
-- Emulador: `BuildConfig.API_BASE_URL` → `http://10.0.2.2:8080/`
-- Backend local deve estar acessível (HTTP, sem redirect HTTPS)
-
----
-
-## 2. Etapa 7 (Retrofit base)
-
-Retrofit, TokenStore, repositórios REST, ranking, login — ver branch `cursor/sprint2-android-retrofit-befe` (PR #14).
-
----
-
-## 3. Backend (etapas 2–6)
-
-Auth, estratégias, ideias, projetos, relatórios, ranking, IA Gemini — branch `cursor/sprint2-backend-foundation-befe`.
+Integração Mongo: executar localmente `bash scripts/test-backend.sh` ou CI GitHub.
 
 ---
 
-## 4. Testes backend (agente Cloud)
+## 2. Android etapa 8
 
-```bash
-cd backend && dotnet build -c Release && dotnet test ../tests/InovaGAB.IntegrationTests -c Release
-```
-
-Requer `MONGODB_URI` para integração.
+Ver branch `cursor/sprint2-android-features-befe` (PR #15). Core library desugaring habilitado para `java.time` em minSdk 24.
 
 ---
 
-## 5. Evidências IA backend
+## 3. Backend etapas 2–6
 
-Ver `docs/sprint2/IA_EVIDENCIA.md` — chamada real Gemini **PENDENTE** de execução opt-in no ambiente com chave.
+Auth, estratégias, ideias, projetos, relatórios, ranking, IA — branch `cursor/sprint2-backend-foundation-befe`.
+
+---
+
+## 4. Evidências IA backend
+
+`docs/sprint2/IA_EVIDENCIA.md` — chamada real Gemini **PENDENTE** sem `AI_API_KEY` opt-in.
