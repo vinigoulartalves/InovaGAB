@@ -1,48 +1,49 @@
 # InovaGAB Sprint 2 — STATUS
 
 **Atualizado em:** 2026-09-20 (UTC)  
-**Etapa atual:** 7 — Android Retrofit (integração parcial)  
-**Branch:** `cursor/sprint2-backend-foundation-befe` (Android na mesma árvore)
+**Etapa atual:** 8 — Android funcionalidades API real (prompt 8)  
+**Branch Android:** `cursor/sprint2-android-features-befe` (base: `cursor/sprint2-android-retrofit-befe`)
 
 ---
 
-## 1. Resumo etapa 7 (Android)
+## 1. Resumo etapa 8 (Android)
 
 | Item | Estado |
 |---|---|
-| Retrofit + OkHttp + Moshi (BigDecimal monetário) | **Implementado** |
-| DTOs / APIs / mappers REST (`api/v1`) | **Implementado** |
-| Cinco repositórios migrados de Firebase → API | **Implementado** |
-| TokenStore cifrado (EncryptedSharedPreferences + Keystore) | **Implementado** |
-| Bearer + refresh (cliente separado, 1 retry) | **Implementado** |
-| Dashboard líder via `/relatorios/dashboard` (sem cálculo local) | **Implementado** |
-| Ranking via `/ranking` (sem Firestore) | **Implementado** |
-| Sem gravação de pontos no app | **Implementado** |
-| `BASE_URL` debug `http://10.0.2.2:8080/`; release HTTPS placeholder | **Implementado** |
-| Cleartext só debug (`network_security_config`) | **Implementado** |
-| Telas existentes ligadas aos repositórios REST | **Implementado** |
-| Botão IA / telas novas (prompt 8) | **Não iniciado** (parar antes, conforme escopo) |
+| Operador: estratégia vigente no formulário, editar/excluir ENVIADA, 409 amigável | **Implementado** |
+| Líder: estratégias categoria/campanha/vigência/status, histórico, arquivadas visíveis | **Implementado** |
+| Gestor: conversão ideia→projeto, selects API, IA na gestão, exclusão projeto | **Implementado** |
+| Dashboard: filtros backend, gráficos Canvas, ROI null = Não aplicável | **Implementado** |
+| API: PUT/DELETE ideias, conversão, analises-ia, histórico, dashboard query params | **Implementado** |
+| DI: `AppViewModelFactory` + `inovaViewModel()` | **Implementado** |
+| `TestTags` estáveis para automação | **Implementado** |
 | `./gradlew :app:assembleDebug` | **OK** (agente Cloud) |
-| `./gradlew :app:testDebugUnitTest` | **OK** (`MoneyMoshiTest`) |
-| Execução em emulador/dispositivo | **Não executada** (sem SDK/emulador no agente) |
+| `./gradlew :app:testDebugUnitTest` | **OK** |
+| `./gradlew :app:connectedDebugAndroidTest` | **Não executado** (sem emulador/dispositivo conectado no agente) |
+| Jornadas em emulador com evidência de vídeo | **Pendente** (ambiente sem AVD ativo) |
 
-Firebase remoto **não alterado**; dependências/plugins Firebase removidos do módulo `app`; `google-services.json` permanece no repositório sem uso.
+APK debug gerado: `app/build/outputs/apk/debug/app-debug.apk`
 
 ### Configuração API no dispositivo
 
 - Emulador: `BuildConfig.API_BASE_URL` → `http://10.0.2.2:8080/`
-- Aparelho físico: alterar `buildTypes.debug.buildConfigField` para o IP LAN do PC ou usar `adb reverse tcp:8080 tcp:8080` e `http://127.0.0.1:8080/`
-- Backend deve estar em HTTP no dev (sem redirect para HTTPS inexistente)
+- Backend local deve estar acessível (HTTP, sem redirect HTTPS)
 
 ---
 
-## 2. Backend (etapas 2–6)
+## 2. Etapa 7 (Retrofit base)
 
-- Auth, estratégias, ideias, projetos, relatórios, ranking, IA Gemini — ver commits na branch `cursor/sprint2-backend-foundation-befe`.
+Retrofit, TokenStore, repositórios REST, ranking, login — ver branch `cursor/sprint2-android-retrofit-befe` (PR #14).
 
 ---
 
-## 3. Testes backend (agente Cloud)
+## 3. Backend (etapas 2–6)
+
+Auth, estratégias, ideias, projetos, relatórios, ranking, IA Gemini — branch `cursor/sprint2-backend-foundation-befe`.
+
+---
+
+## 4. Testes backend (agente Cloud)
 
 ```bash
 cd backend && dotnet build -c Release && dotnet test ../tests/InovaGAB.IntegrationTests -c Release
@@ -52,6 +53,6 @@ Requer `MONGODB_URI` para integração.
 
 ---
 
-## 4. Próxima etapa
+## 5. Evidências IA backend
 
-**Prompt 8:** telas IA no Android, gráficos dashboard, polish UI — **não incluído nesta entrega**.
+Ver `docs/sprint2/IA_EVIDENCIA.md` — chamada real Gemini **PENDENTE** de execução opt-in no ambiente com chave.

@@ -2,14 +2,17 @@ package com.fiap.inovagab.data.repository
 
 import com.fiap.inovagab.core.network.ApiCallRunner
 import com.fiap.inovagab.core.session.SessionManager
+import com.fiap.inovagab.data.model.Orientacao
 import com.fiap.inovagab.data.model.Projeto
 import com.fiap.inovagab.data.remote.api.EstrategiasApi
 import com.fiap.inovagab.data.remote.api.ProjetosApi
 import com.fiap.inovagab.data.remote.api.UsuariosApi
 import com.fiap.inovagab.data.remote.dto.ProjetoCreateRequestDto
 import com.fiap.inovagab.data.remote.dto.ProjetoUpdateRequestDto
+import com.fiap.inovagab.data.remote.dto.ResponsavelResumoDto
 import com.fiap.inovagab.data.remote.fetchAllPages
 import com.fiap.inovagab.data.remote.toMoneyBigDecimal
+import com.fiap.inovagab.data.remote.toOrientacao
 import com.fiap.inovagab.data.remote.toProjeto
 
 class ProjetoRepository(
@@ -26,6 +29,16 @@ class ProjetoRepository(
 
     suspend fun buscarPorId(id: String): Result<Projeto?> = ApiCallRunner.run {
         projetosApi.get(id).toProjeto()
+    }
+
+    suspend fun listarResponsaveis(): Result<List<ResponsavelResumoDto>> = ApiCallRunner.run {
+        usuariosApi.responsaveis()
+    }
+
+    suspend fun listarEstrategiasVigentes(): Result<List<Orientacao>> = ApiCallRunner.run {
+        fetchAllPages { page, size -> estrategiasApi.list(page, size, vigente = true) }
+            .map { it.toOrientacao() }
+            .filter { it.selecionavelParaNovoVinculo }
     }
 
     suspend fun criar(projeto: Projeto): Result<String> = ApiCallRunner.run {
@@ -67,6 +80,11 @@ class ProjetoRepository(
                 prazo = projeto.prazo
             )
         )
+        Unit
+    }
+
+    suspend fun excluir(projeto: Projeto): Result<Unit> = ApiCallRunner.run {
+        projetosApi.delete(projeto.id, "W/\"${projeto.versao}\"")
         Unit
     }
 

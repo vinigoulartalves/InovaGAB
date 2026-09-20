@@ -1,32 +1,24 @@
 package com.fiap.inovagab.data.repository
 
 import com.fiap.inovagab.core.network.ApiCallRunner
-import com.fiap.inovagab.data.remote.api.ProjetosApi
+import com.fiap.inovagab.data.model.DashboardFiltros
+import com.fiap.inovagab.data.model.DashboardReport
 import com.fiap.inovagab.data.remote.api.RelatoriosApi
-import com.fiap.inovagab.data.remote.fetchAllPages
-import com.fiap.inovagab.data.remote.toProjeto
-import com.fiap.inovagab.ui.lider.DashboardUiState
+import com.fiap.inovagab.data.remote.toDashboardReport
 
 class RelatorioRepository(
-    private val relatoriosApi: RelatoriosApi,
-    private val projetosApi: ProjetosApi
+    private val relatoriosApi: RelatoriosApi
 ) {
 
-    suspend fun carregarDashboard(): Result<DashboardUiState> = ApiCallRunner.run {
-        val dash = relatoriosApi.dashboard()
-        val projetos = fetchAllPages { page, size -> projetosApi.list(page, size) }
-            .map { it.toProjeto() }
-
-        DashboardUiState(
-            carregando = false,
-            erro = null,
-            totalProjetos = projetos.size,
-            investimentoTotal = dash.investimentoTotal.toDouble(),
-            retornoTotal = dash.retornoTotal.toDouble(),
-            lucroObtido = dash.lucroTotal.toDouble(),
-            roiGeral = dash.roiPercentual?.toDouble() ?: 0.0,
-            reducaoCustosTotal = dash.reducaoCustosTotal.toDouble(),
-            ganhoProdutividadeMedio = dash.ganhoProdutividadeMedio?.toDouble() ?: 0.0
-        )
-    }
+    suspend fun carregarDashboard(filtros: DashboardFiltros = DashboardFiltros()): Result<DashboardReport> =
+        ApiCallRunner.run {
+            val dash = relatoriosApi.dashboard(
+                estrategiaId = filtros.estrategiaId,
+                projetoId = filtros.projetoId,
+                inicio = filtros.inicio,
+                fim = filtros.fim
+            )
+            val totalProjetos = dash.distribuicaoPorStatus.sumOf { it.quantidade }
+            dash.toDashboardReport(totalProjetos)
+        }
 }

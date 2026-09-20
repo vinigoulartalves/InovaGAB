@@ -30,9 +30,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.testTag
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
+import com.fiap.inovagab.core.di.inovaViewModel
+import com.fiap.inovagab.core.testing.TestTags
+import com.fiap.inovagab.core.ui.components.AppButton
 import com.fiap.inovagab.core.ui.components.AppCard
+import com.fiap.inovagab.data.model.AnaliseIa
 import com.fiap.inovagab.core.ui.effects.OnResumeEffect
 import com.fiap.inovagab.data.model.Ideia
 import com.fiap.inovagab.data.model.PrioridadeIdeia
@@ -53,7 +57,8 @@ private val PrioridadesEditaveis = listOf(
 @Composable
 fun GestaoIdeiasScreen(
     onBack: () -> Unit = {},
-    viewModel: GestorViewModel = viewModel()
+    onConverterProjeto: (String) -> Unit = {},
+    viewModel: GestorViewModel = inovaViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
@@ -154,15 +159,27 @@ fun GestaoIdeiasScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f)
+                        .testTag(TestTags.GESTAO_IDEIAS_LISTA)
                 ) {
                     items(state.ideias, key = { it.id }) { ideia ->
+                        val iaPainel = state.iaPorIdeia[ideia.id] ?: IaPainelUiState()
                         IdeiaGestaoCard(
                             ideia = ideia,
+                            iaPainel = iaPainel,
                             onAlterarPrioridade = { nova ->
                                 viewModel.alterarPrioridade(ideia, nova)
                             },
                             onAlterarStatus = { novo ->
                                 viewModel.alterarStatus(ideia, novo)
+                            },
+                            onAnalisarIa = { viewModel.analisarComIa(ideia) },
+                            onAplicarPrioridadeIa = { analise ->
+                                viewModel.aplicarPrioridadeSugerida(ideia, analise)
+                            },
+                            onConverterProjeto = {
+                                if (ideia.status == StatusIdeia.APROVADA) {
+                                    onConverterProjeto(ideia.id)
+                                }
                             }
                         )
                     }
@@ -186,8 +203,12 @@ fun GestaoIdeiasScreen(
 @Composable
 private fun IdeiaGestaoCard(
     ideia: Ideia,
+    iaPainel: IaPainelUiState,
     onAlterarPrioridade: (PrioridadeIdeia) -> Unit,
-    onAlterarStatus: (StatusIdeia) -> Unit
+    onAlterarStatus: (StatusIdeia) -> Unit,
+    onAnalisarIa: () -> Unit,
+    onAplicarPrioridadeIa: (AnaliseIa) -> Unit,
+    onConverterProjeto: () -> Unit
 ) {
     AppCard {
         Text(
@@ -253,6 +274,109 @@ private fun IdeiaGestaoCard(
                 onSelecionar = onAlterarStatus,
                 modifier = Modifier.weight(1f)
             )
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        AppButton(
+            text = if (iaPainel.carregando) "Analisando com IA…" else "Analisar com IA",
+            onClick = onAnalisarIa,
+            loading = iaPainel.carregando,
+            enabled = !iaPainel.carregando,
+            modifier = Modifier.testTag(TestTags.GESTAO_ANALISAR_IA)
+        )
+
+        if (iaPainel.erro != null) {
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = iaPainel.erro ?: "",
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall
+            )
+        }
+
+        iaPainel.analise?.let { analise ->
+            Spacer(modifier = Modifier.height(8.dp))
+            PainelAnaliseIa(
+                analise = analise,
+                onAplicarPrioridade = { onAplicarPrioridadeIa(analise) }
+            )
+        }
+
+        if (ideia.status == StatusIdeia.APROVADA) {
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedButton(
+                onClick = onConverterProjeto,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag(TestTags.GESTAO_CONVERTER_PROJETO)
+            ) {
+                Text(text = "Converter em projeto")
+            }
+        }
+    }
+}
+
+@Composable
+private fun PainelAnaliseIa(
+    analise: AnaliseIa,
+    onAplicarPrioridade: () -> Unit
+) {
+    Surface(
+        color = Color(0xFFE8EEF5),
+        shape = RoundedCornerShape(8.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Text(
+                text = "Análise IA — nota ${analise.pontuacaoTotal}/100",
+                fontWeight = FontWeight.SemiBold,
+                color = Color(0xFF002B5C)
+            )
+            if (analise.desatualizada) {
+                Text(
+                    text = "Indicador: análise desatualizada (ideia alterada após a análise).",
+                    color = Color(0xFFB26A00),
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+            Text(
+                text = "Prioridade sugerida: ${formatarPrioridade(analise.prioridadeSugerida)}",
+                style = MaterialTheme.typography.bodySmall
+            )
+            Text(
+                text = analise.justificativa,
+                style = MaterialTheme.typography.bodySmall,
+                color = Color(0xFF2C3E50)
+            )
+            if (analise.riscos.isNotEmpty()) {
+                Text(
+                    text = "Riscos: ${analise.riscos.joinToString("; ")}",
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+            if (analise.melhorias.isNotEmpty()) {
+                Text(
+                    text = "Melhorias: ${analise.melhorias.joinToString("; ")}",
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+            val meta = listOfNotNull(analise.modelo, analise.provedor)
+                .joinToString(" · ")
+            if (meta.isNotBlank()) {
+                Text(
+                    text = "Modelo: $meta",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color(0xFF4A5A6E)
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedButton(
+                onClick = onAplicarPrioridade,
+                modifier = Modifier.testTag(TestTags.GESTAO_APLICAR_PRIORIDADE_IA)
+            ) {
+                Text(text = "Aplicar prioridade sugerida (avaliação)")
+            }
         }
     }
 }

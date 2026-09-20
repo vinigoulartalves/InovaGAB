@@ -91,19 +91,35 @@ fun AppNavGraph(
         composable(Routes.HOME_OPERADOR) {
             HomeOperadorScreen(
                 onVerOrientacoes = { navController.navigate(Routes.ORIENTACOES_LIST) },
-                onCadastrarIdeia = { navController.navigate(Routes.IDEIA_FORM) },
+                onCadastrarIdeia = { navController.navigate(Routes.ideiaFormNova()) },
                 onMinhasIdeias = { navController.navigate(Routes.MINHAS_IDEIAS) },
                 onRanking = { navController.navigate(Routes.RANKING) },
                 onLogout = logout
             )
         }
-        composable(Routes.IDEIA_FORM) {
+        composable(
+            route = Routes.IDEIA_FORM,
+            arguments = listOf(
+                navArgument(Routes.IDEIA_FORM_ARG_ID) {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
+            )
+        ) { entry ->
+            val ideiaId = entry.arguments?.getString(Routes.IDEIA_FORM_ARG_ID)
             IdeiaFormScreen(
+                ideiaId = ideiaId,
                 onBack = back,
                 onSucesso = back
             )
         }
-        composable(Routes.MINHAS_IDEIAS) { MinhasIdeiasScreen(onBack = back) }
+        composable(Routes.MINHAS_IDEIAS) {
+            MinhasIdeiasScreen(
+                onBack = back,
+                onEditar = { id -> navController.navigate(Routes.ideiaFormEdicao(id)) }
+            )
+        }
 
         composable(Routes.HOME_GESTOR) {
             HomeGestorScreen(
@@ -115,7 +131,14 @@ fun AppNavGraph(
                 onLogout = logout
             )
         }
-        composable(Routes.GESTAO_IDEIAS) { GestaoIdeiasScreen(onBack = back) }
+        composable(Routes.GESTAO_IDEIAS) {
+            GestaoIdeiasScreen(
+                onBack = back,
+                onConverterProjeto = { ideiaId ->
+                    navController.navigate(Routes.projetoFormConversao(ideiaId))
+                }
+            )
+        }
 
         composable(
             route = Routes.PROJETO_FORM,
@@ -124,12 +147,19 @@ fun AppNavGraph(
                     type = NavType.StringType
                     nullable = true
                     defaultValue = null
+                },
+                navArgument(Routes.PROJETO_FORM_ARG_IDEA) {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
                 }
             )
         ) { entry ->
             val id = entry.arguments?.getString(Routes.PROJETO_FORM_ARG_ID)
+            val ideiaId = entry.arguments?.getString(Routes.PROJETO_FORM_ARG_IDEA)
             ProjetoFormScreen(
                 projetoId = id,
+                ideiaConversaoId = ideiaId,
                 onBack = back,
                 onSucesso = back
             )

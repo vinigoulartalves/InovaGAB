@@ -2,9 +2,12 @@ package com.fiap.inovagab.ui.lider
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.fiap.inovagab.core.network.toUserMessage
+import com.fiap.inovagab.data.model.DashboardFiltros
+import com.fiap.inovagab.data.model.DashboardReport
+import com.fiap.inovagab.data.model.EstrategiaHistorico
 import com.fiap.inovagab.data.model.Orientacao
 import com.fiap.inovagab.data.model.Projeto
-import com.fiap.inovagab.InovaGabApp
 import com.fiap.inovagab.data.repository.OrientacaoRepository
 import com.fiap.inovagab.data.repository.ProjetoRepository
 import com.fiap.inovagab.data.repository.RelatorioRepository
@@ -29,19 +32,24 @@ data class ProjetosConsultaUiState(
 data class DashboardUiState(
     val carregando: Boolean = false,
     val erro: String? = null,
-    val totalProjetos: Int = 0,
-    val investimentoTotal: Double = 0.0,
-    val retornoTotal: Double = 0.0,
-    val lucroObtido: Double = 0.0,
-    val roiGeral: Double = 0.0,
-    val reducaoCustosTotal: Double = 0.0,
-    val ganhoProdutividadeMedio: Double = 0.0
+    val vazio: Boolean = false,
+    val report: DashboardReport? = null,
+    val filtros: DashboardFiltros = DashboardFiltros(),
+    val estrategiasOpcoes: List<Orientacao> = emptyList(),
+    val projetosOpcoes: List<Projeto> = emptyList()
 )
 
 data class OrientacaoFormUiState(
     val id: String = "",
     val titulo: String = "",
     val descricao: String = "",
+    val categoria: String = "",
+    val campanha: String = "",
+    val inicioVigencia: String = "",
+    val fimVigencia: String = "",
+    val ativa: Boolean = true,
+    val versao: Int = 1,
+    val historico: List<EstrategiaHistorico> = emptyList(),
     val carregando: Boolean = false,
     val salvando: Boolean = false,
     val excluindo: Boolean = false,
@@ -52,9 +60,9 @@ data class OrientacaoFormUiState(
 }
 
 class LiderViewModel(
-    private val repository: OrientacaoRepository = InovaGabApp.instance.orientacaoRepository,
-    private val projetoRepository: ProjetoRepository = InovaGabApp.instance.projetoRepository,
-    private val relatorioRepository: RelatorioRepository = InovaGabApp.instance.relatorioRepository
+    private val repository: OrientacaoRepository,
+    private val projetoRepository: ProjetoRepository,
+    private val relatorioRepository: RelatorioRepository
 ) : ViewModel() {
 
     private val _listState = MutableStateFlow(OrientacoesListUiState())
@@ -70,22 +78,58 @@ class LiderViewModel(
     val dashboardState: StateFlow<DashboardUiState> = _dashboardState.asStateFlow()
 
     fun carregarDashboard() {
+        val filtros = _dashboardState.value.filtros
         _dashboardState.update { it.copy(carregando = true, erro = null) }
         viewModelScope.launch {
-            relatorioRepository.carregarDashboard().fold(
-                onSuccess = { dashboard ->
-                    _dashboardState.value = dashboard
+            relatorioRepository.carregarDashboard(filtros).fold(
+                onSuccess = { report ->
+                    val vazio = report.totalProjetos == 0 &&
+                        report.investimentoRetornoPorEstrategia.isEmpty()
+                    _dashboardState.update {
+                        it.copy(
+                            carregando = false,
+                            report = report,
+                            vazio = vazio,
+                            erro = null
+                        )
+                    }
                 },
                 onFailure = { erro ->
                     _dashboardState.update {
                         it.copy(
                             carregando = false,
-                            erro = erro.message ?: "Não foi possível carregar a dashboard."
+                            erro = erro.toUserMessage()
                         )
                     }
                 }
             )
         }
+    }
+
+    fun carregarOpcoesDashboard() {
+        viewModelScope.launch {
+            val estrategias = repository.listar().getOrDefault(emptyList())
+            val projetos = projetoRepository.listar().getOrDefault(emptyList())
+            _dashboardState.update {
+                it.copy(estrategiasOpcoes = estrategias, projetosOpcoes = projetos)
+            }
+        }
+    }
+
+    fun onFiltroEstrategiaChange(id: String?) {
+        _dashboardState.update { it.copy(filtros = it.filtros.copy(estrategiaId = id)) }
+    }
+
+    fun onFiltroProjetoChange(id: String?) {
+        _dashboardState.update { it.copy(filtros = it.filtros.copy(projetoId = id)) }
+    }
+
+    fun onFiltroInicioChange(value: String) {
+        _dashboardState.update { it.copy(filtros = it.filtros.copy(inicio = value.ifBlank { null })) }
+    }
+
+    fun onFiltroFimChange(value: String) {
+        _dashboardState.update { it.copy(filtros = it.filtros.copy(fim = value.ifBlank { null })) }
     }
 
     fun consultarProjetos() {
@@ -99,10 +143,7 @@ class LiderViewModel(
                 },
                 onFailure = { erro ->
                     _projetosState.update {
-                        it.copy(
-                            carregando = false,
-                            erro = erro.message ?: "Não foi possível consultar os projetos."
-                        )
+                        it.copy(carregando = false, erro = erro.toUserMessage())
                     }
                 }
             )
@@ -120,10 +161,7 @@ class LiderViewModel(
                 },
                 onFailure = { erro ->
                     _listState.update {
-                        it.copy(
-                            loading = false,
-                            erro = erro.message ?: "Não foi possível carregar as orientações."
-                        )
+                        it.copy(loading = false, erro = erro.toUserMessage())
                     }
                 }
             )
@@ -142,18 +180,23 @@ class LiderViewModel(
                 onSuccess = { orientacao ->
                     if (orientacao == null) {
                         _formState.update {
-                            it.copy(
-                                carregando = false,
-                                erro = "Orientação não encontrada."
-                            )
+                            it.copy(carregando = false, erro = "Orientação não encontrada.")
                         }
                     } else {
+                        val hist = repository.historico(id).getOrDefault(emptyList())
                         _formState.update {
                             it.copy(
                                 carregando = false,
                                 id = orientacao.id,
                                 titulo = orientacao.titulo,
                                 descricao = orientacao.descricao,
+                                categoria = orientacao.categoria,
+                                campanha = orientacao.campanha,
+                                inicioVigencia = orientacao.inicioVigencia,
+                                fimVigencia = orientacao.fimVigencia.orEmpty(),
+                                ativa = orientacao.ativa,
+                                versao = orientacao.versao,
+                                historico = hist,
                                 erro = null
                             )
                         }
@@ -161,10 +204,7 @@ class LiderViewModel(
                 },
                 onFailure = { erro ->
                     _formState.update {
-                        it.copy(
-                            carregando = false,
-                            erro = erro.message ?: "Não foi possível abrir a orientação."
-                        )
+                        it.copy(carregando = false, erro = erro.toUserMessage())
                     }
                 }
             )
@@ -179,34 +219,62 @@ class LiderViewModel(
         _formState.update { it.copy(descricao = value, erro = null) }
     }
 
+    fun onCategoriaChange(value: String) {
+        _formState.update { it.copy(categoria = value, erro = null) }
+    }
+
+    fun onCampanhaChange(value: String) {
+        _formState.update { it.copy(campanha = value, erro = null) }
+    }
+
+    fun onInicioVigenciaChange(value: String) {
+        _formState.update { it.copy(inicioVigencia = value, erro = null) }
+    }
+
+    fun onFimVigenciaChange(value: String) {
+        _formState.update { it.copy(fimVigencia = value, erro = null) }
+    }
+
+    fun onAtivaChange(value: Boolean) {
+        _formState.update { it.copy(ativa = value, erro = null) }
+    }
+
     fun salvar() {
         val state = _formState.value
         val titulo = state.titulo.trim()
         val descricao = state.descricao.trim()
+        val categoria = state.categoria.trim()
+        val campanha = state.campanha.trim()
+        val inicio = state.inicioVigencia.trim()
 
-        if (titulo.isBlank() || descricao.isBlank()) {
-            _formState.update { it.copy(erro = "Informe o título e a descrição.") }
+        if (titulo.isBlank() || descricao.isBlank() || categoria.isBlank() ||
+            campanha.isBlank() || inicio.isBlank()
+        ) {
+            _formState.update {
+                it.copy(erro = "Preencha título, descrição, categoria, campanha e início da vigência.")
+            }
             return
         }
 
         _formState.update { it.copy(salvando = true, erro = null) }
 
+        val orientacao = Orientacao(
+            id = state.id,
+            titulo = titulo,
+            descricao = descricao,
+            categoria = categoria,
+            campanha = campanha,
+            inicioVigencia = inicio,
+            fimVigencia = state.fimVigencia.ifBlank { null },
+            ativa = state.ativa,
+            versao = state.versao
+        )
+
         viewModelScope.launch {
             val resultado = if (state.isEdicao) {
-                repository.atualizar(
-                    Orientacao(
-                        id = state.id,
-                        titulo = titulo,
-                        descricao = descricao
-                    )
-                )
+                repository.atualizar(orientacao)
             } else {
-                repository.criar(
-                    Orientacao(
-                        titulo = titulo,
-                        descricao = descricao
-                    )
-                ).map { }
+                repository.criar(orientacao).map { }
             }
 
             resultado.fold(
@@ -215,10 +283,7 @@ class LiderViewModel(
                 },
                 onFailure = { erro ->
                     _formState.update {
-                        it.copy(
-                            salvando = false,
-                            erro = erro.message ?: "Não foi possível salvar a orientação."
-                        )
+                        it.copy(salvando = false, erro = erro.toUserMessage())
                     }
                 }
             )
@@ -236,10 +301,7 @@ class LiderViewModel(
                 },
                 onFailure = { erro ->
                     _formState.update {
-                        it.copy(
-                            excluindo = false,
-                            erro = erro.message ?: "Não foi possível excluir a orientação."
-                        )
+                        it.copy(excluindo = false, erro = erro.toUserMessage())
                     }
                 }
             )
@@ -249,4 +311,7 @@ class LiderViewModel(
     fun consumirNavegacao() {
         _formState.update { it.copy(concluido = false) }
     }
+
+    private fun <T> Result<T>.getOrDefault(default: T): T =
+        getOrElse { default }
 }

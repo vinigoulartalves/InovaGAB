@@ -9,7 +9,7 @@ Legenda de prioridade:
 | **OBR** | Obrigatório funcional / integração Sprint 2 |
 | **PLUS** | Diferencial (IA real, automação avançada, entrega PDF, etc.) |
 
-Status de implementação nesta etapa: **documentado** (código e testes nas etapas 2–10).
+Status de implementação: **backend etapas 2–6** no repositório; **Android etapa 8** (`cursor/sprint2-android-features-befe`) com telas ligadas aos endpoints abaixo. Evidência E2E em dispositivo: pendente de gravação.
 
 ---
 

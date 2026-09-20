@@ -5,10 +5,15 @@ import com.fiap.inovagab.data.remote.dto.EstrategiaCreateRequestDto
 import com.fiap.inovagab.data.remote.dto.EstrategiaDetalheDto
 import com.fiap.inovagab.data.remote.dto.EstrategiaResumoDto
 import com.fiap.inovagab.data.remote.dto.EstrategiaUpdateRequestDto
+import com.fiap.inovagab.data.remote.dto.AnaliseIaDetalheDto
+import com.fiap.inovagab.data.remote.dto.AnaliseIaResumoDto
+import com.fiap.inovagab.data.remote.dto.ConversaoIdeiaProjetoRequestDto
+import com.fiap.inovagab.data.remote.dto.EstrategiaHistoricoItemDto
 import com.fiap.inovagab.data.remote.dto.IdeiaAvaliacaoRequestDto
 import com.fiap.inovagab.data.remote.dto.IdeiaCreateRequestDto
 import com.fiap.inovagab.data.remote.dto.IdeiaDetalheDto
 import com.fiap.inovagab.data.remote.dto.IdeiaResumoDto
+import com.fiap.inovagab.data.remote.dto.IdeiaUpdateRequestDto
 import com.fiap.inovagab.data.remote.dto.LoginRequestDto
 import com.fiap.inovagab.data.remote.dto.LoginResponseDto
 import com.fiap.inovagab.data.remote.dto.LogoutRequestDto
@@ -71,13 +76,23 @@ interface EstrategiasApi {
         @Path("id") id: String,
         @Header("If-Match") ifMatch: String
     ): Response<Unit>
+
+    @GET("api/v1/estrategias/{id}/historico")
+    suspend fun historico(
+        @Path("id") id: String,
+        @Query("page") page: Int,
+        @Query("pageSize") pageSize: Int
+    ): PagedResultDto<EstrategiaHistoricoItemDto>
 }
 
 interface IdeiasApi {
     @GET("api/v1/ideias")
     suspend fun list(
         @Query("page") page: Int,
-        @Query("pageSize") pageSize: Int
+        @Query("pageSize") pageSize: Int,
+        @Query("autorId") autorId: String? = null,
+        @Query("status") status: String? = null,
+        @Query("estrategiaId") estrategiaId: String? = null
     ): PagedResultDto<IdeiaResumoDto>
 
     @GET("api/v1/ideias/{id}")
@@ -86,11 +101,39 @@ interface IdeiasApi {
     @POST("api/v1/ideias")
     suspend fun create(@Body body: IdeiaCreateRequestDto): IdeiaDetalheDto
 
+    @PUT("api/v1/ideias/{id}")
+    suspend fun update(
+        @Path("id") id: String,
+        @Body body: IdeiaUpdateRequestDto
+    ): IdeiaDetalheDto
+
+    @DELETE("api/v1/ideias/{id}")
+    suspend fun delete(
+        @Path("id") id: String,
+        @Header("If-Match") ifMatch: String
+    ): Response<Unit>
+
     @PATCH("api/v1/ideias/{id}/avaliacao")
     suspend fun avaliar(
         @Path("id") id: String,
         @Body body: IdeiaAvaliacaoRequestDto
     ): IdeiaDetalheDto
+
+    @POST("api/v1/ideias/{id}/projeto")
+    suspend fun converterEmProjeto(
+        @Path("id") id: String,
+        @Body body: ConversaoIdeiaProjetoRequestDto
+    ): ProjetoDetalheDto
+
+    @POST("api/v1/ideias/{id}/analises-ia")
+    suspend fun solicitarAnaliseIa(@Path("id") id: String): AnaliseIaDetalheDto
+
+    @GET("api/v1/ideias/{id}/analises-ia")
+    suspend fun listarAnalisesIa(
+        @Path("id") id: String,
+        @Query("page") page: Int,
+        @Query("pageSize") pageSize: Int
+    ): PagedResultDto<AnaliseIaResumoDto>
 }
 
 interface ProjetosApi {
@@ -111,12 +154,21 @@ interface ProjetosApi {
         @Path("id") id: String,
         @Body body: ProjetoUpdateRequestDto
     ): ProjetoDetalheDto
+
+    @DELETE("api/v1/projetos/{id}")
+    suspend fun delete(
+        @Path("id") id: String,
+        @Header("If-Match") ifMatch: String
+    ): Response<Unit>
 }
 
 interface RelatoriosApi {
     @GET("api/v1/relatorios/dashboard")
     suspend fun dashboard(
-        @Query("estrategiaId") estrategiaId: String? = null
+        @Query("estrategiaId") estrategiaId: String? = null,
+        @Query("projetoId") projetoId: String? = null,
+        @Query("inicio") inicio: String? = null,
+        @Query("fim") fim: String? = null
     ): DashboardRelatorioDto
 }
 
