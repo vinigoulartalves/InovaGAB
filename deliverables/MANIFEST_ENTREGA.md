@@ -2,8 +2,8 @@
 
 | Campo | Valor |
 |-------|-------|
-| Data UTC | 2026-09-20T14:50:16Z |
-| Git commit | 62955706afc53e8e31d9f5f6489cc53cb5459085 |
+| Data UTC | 2026-09-20T14:50:54Z |
+| Git commit | 630215253d39bb77539dfb8a043a7ac55c80f540 |
 | .NET SDK (host build) | 8.0.425 |
 | Mongo (Compose) | mongo:7.0.24 |
 | Modelo IA configurado | gemini-2.0-flash |
@@ -12,8 +12,8 @@
 
 | Arquivo | SHA-256 |
 |---------|---------|
-| InovaGAB_Backend_Sprint2.zip | 6fa879c92a1dc88947bcab0fd0b71979d93d24b70573fdfe6dbc094229520392 |
-| InovaGAB_Android_Sprint2.zip | 1826b3a9a4e110d7de2307cd179f574b04b7e320b4b34beabde593278f017594 |
+| InovaGAB_Backend_Sprint2.zip | 7859e200aa525085d43f3951f2fbacff70eb979655c3a670d38e02d7b9cda73e |
+| InovaGAB_Android_Sprint2.zip | a632b0c1c69f71da1b2792bbfcaba116e19eb7b378fc95808e4d2965b896fb5e |
 | app-debug.apk (fonte) | d1c9e0b05b1e20932248d2f773666a433c7b2ed6fe380c02fe6c1b097474daf9 |
 
 ## Roteiro de avaliação
