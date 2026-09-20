@@ -21,6 +21,15 @@ public sealed class IdeiaAnalysisTests
     private HttpClient? _client;
     private FakeGeminiIdeiaAnalysisClient? _fakeGemini;
 
+    private InovaGabWebApplicationFactory Factory
+    {
+        get
+        {
+            _ = Client;
+            return _factory!;
+        }
+    }
+
     private HttpClient Client
     {
         get
@@ -55,7 +64,7 @@ public sealed class IdeiaAnalysisTests
     [Fact]
     public async Task Gestor_persiste_analise_e_operador_nao_acessa()
     {
-        await AuthTestSeed.SeedAsync(_factory!.Services);
+        await AuthTestSeed.SeedAsync(Factory.Services);
         _fakeGemini!.Mode = GeminiIdeiaAnalysisMode.Success;
 
         var lider = await LoginAsync(AuthTestSeed.LiderEmail);
@@ -74,7 +83,7 @@ public sealed class IdeiaAnalysisTests
             Ativa = true
         });
         est.EnsureSuccessStatusCode();
-        var estrategia = (await est.Content.ReadFromJsonAsync<EstrategiaDetalheDto>())!;
+        var estrategia = (await est.Content.ReadFromJsonAsync<EstrategiaDetalheDto>(IntegrationTestJson.Options))!;
 
         Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", operador.AccessToken);
         var ideiaResp = await Client.PostAsJsonAsync("/api/v1/ideias", new IdeiaCreateRequestDto
@@ -85,7 +94,7 @@ public sealed class IdeiaAnalysisTests
             EstrategiaId = estrategia.Id
         });
         ideiaResp.EnsureSuccessStatusCode();
-        var ideia = (await ideiaResp.Content.ReadFromJsonAsync<IdeiaDetalheDto>())!;
+        var ideia = (await ideiaResp.Content.ReadFromJsonAsync<IdeiaDetalheDto>(IntegrationTestJson.Options))!;
 
         Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", operador.AccessToken);
         Assert.Equal(HttpStatusCode.Forbidden, (await Client.PostAsync($"/api/v1/ideias/{ideia.Id}/analises-ia", null)).StatusCode);
@@ -94,12 +103,12 @@ public sealed class IdeiaAnalysisTests
         var analiseResp = await Client.PostAsync($"/api/v1/ideias/{ideia.Id}/analises-ia", null);
         analiseResp.EnsureSuccessStatusCode();
         Assert.Equal(HttpStatusCode.Created, analiseResp.StatusCode);
-        var analise = (await analiseResp.Content.ReadFromJsonAsync<AnaliseIaDetalheDto>())!;
+        var analise = (await analiseResp.Content.ReadFromJsonAsync<AnaliseIaDetalheDto>(IntegrationTestJson.Options))!;
         Assert.Equal(72, analise.PontuacaoTotal);
         Assert.Equal("google-gemini", analise.Provedor);
         Assert.False(string.IsNullOrWhiteSpace(analise.EntradaHash));
 
-        await using (var scope = _factory.Services.CreateAsyncScope())
+        await using (var scope = Factory.Services.CreateAsyncScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<InovaGabDbContext>();
             var stored = await db.IdeiasAnalisesIa.FirstAsync(a => a.Id == analise.Id);
@@ -111,7 +120,7 @@ public sealed class IdeiaAnalysisTests
 
         var historico = await Client.GetAsync($"/api/v1/ideias/{ideia.Id}/analises-ia");
         historico.EnsureSuccessStatusCode();
-        var page = await historico.Content.ReadFromJsonAsync<PagedResultDto<AnaliseIaResumoDto>>();
+        var page = await historico.Content.ReadFromJsonAsync<PagedResultDto<AnaliseIaResumoDto>>(IntegrationTestJson.Options);
         Assert.NotNull(page);
         Assert.Equal(1, page!.TotalItems);
     }
@@ -119,7 +128,7 @@ public sealed class IdeiaAnalysisTests
     [Fact]
     public async Task Resposta_invalida_da_ia_retorna_502()
     {
-        await AuthTestSeed.SeedAsync(_factory!.Services);
+        await AuthTestSeed.SeedAsync(Factory.Services);
         _fakeGemini!.Mode = GeminiIdeiaAnalysisMode.InvalidJson;
 
         var ideiaId = await CriarIdeiaParaGestorAsync();
@@ -131,7 +140,7 @@ public sealed class IdeiaAnalysisTests
     [Fact]
     public async Task Edicao_da_ideia_marca_analise_desatualizada()
     {
-        await AuthTestSeed.SeedAsync(_factory!.Services);
+        await AuthTestSeed.SeedAsync(Factory.Services);
         _fakeGemini!.Mode = GeminiIdeiaAnalysisMode.Success;
 
         var operador = await LoginAsync(AuthTestSeed.OperadorEmail);
@@ -141,7 +150,7 @@ public sealed class IdeiaAnalysisTests
         Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", gestor.AccessToken);
         var analiseResp = await Client.PostAsync($"/api/v1/ideias/{ideiaId}/analises-ia", null);
         analiseResp.EnsureSuccessStatusCode();
-        var analise = (await analiseResp.Content.ReadFromJsonAsync<AnaliseIaDetalheDto>())!;
+        var analise = (await analiseResp.Content.ReadFromJsonAsync<AnaliseIaDetalheDto>(IntegrationTestJson.Options))!;
 
         Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", operador.AccessToken);
         var ideia = await Client.GetFromJsonAsync<IdeiaDetalheDto>($"/api/v1/ideias/{ideiaId}");
@@ -211,7 +220,7 @@ public sealed class IdeiaAnalysisTests
             Ativa = true
         });
         est.EnsureSuccessStatusCode();
-        var estrategia = (await est.Content.ReadFromJsonAsync<EstrategiaDetalheDto>())!;
+        var estrategia = (await est.Content.ReadFromJsonAsync<EstrategiaDetalheDto>(IntegrationTestJson.Options))!;
 
         var operador = await LoginWithClientAsync(client, AuthTestSeed.OperadorEmail);
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", operador.AccessToken);
@@ -223,7 +232,7 @@ public sealed class IdeiaAnalysisTests
             EstrategiaId = estrategia.Id
         });
         ideiaResp.EnsureSuccessStatusCode();
-        var ideia = (await ideiaResp.Content.ReadFromJsonAsync<IdeiaDetalheDto>())!;
+        var ideia = (await ideiaResp.Content.ReadFromJsonAsync<IdeiaDetalheDto>(IntegrationTestJson.Options))!;
         return ideia.Id;
     }
 
@@ -240,7 +249,7 @@ public sealed class IdeiaAnalysisTests
             Senha = AuthTestSeed.TestPassword
         });
         response.EnsureSuccessStatusCode();
-        return (await response.Content.ReadFromJsonAsync<LoginResponseDto>())!;
+        return (await response.Content.ReadFromJsonAsync<LoginResponseDto>(IntegrationTestJson.Options))!;
     }
 
     private static void EnsureMongo() => MongoTestEnvironment.EnsureAvailable();
