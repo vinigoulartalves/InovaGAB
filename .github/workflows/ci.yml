@@ -101,7 +101,11 @@ jobs:
       - name: API + Mongo
         run: |
           docker compose up -d --build mongo mongo-init api
-          bash scripts/lib/wait-for-http.sh http://127.0.0.1:8080/health/ready 200 180 3
+          if ! bash scripts/lib/wait-for-http.sh http://127.0.0.1:8080/health/ready 200 180 3; then
+            docker compose ps --all
+            docker compose logs --no-color mongo-init api
+            exit 1
+          fi
 
       - name: Run instrumented journeys on emulator
         uses: reactivecircus/android-emulator-runner@v2
