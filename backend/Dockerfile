@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 
-FROM mcr.microsoft.com/dotnet/sdk:8.0.401-bookworm-slim AS build
+FROM mcr.microsoft.com/dotnet/sdk:8.0.425-bookworm-slim AS build
 WORKDIR /src
 COPY backend/Directory.Build.props backend/Directory.Packages.props backend/global.json ./
 COPY backend/src/InovaGAB.Domain/ ./src/InovaGAB.Domain/
