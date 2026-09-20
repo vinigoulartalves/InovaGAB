@@ -64,15 +64,14 @@ class Sprint2JourneyInstrumentedTest {
 
     @Before
     fun clearDataAndRequireApi() {
-        // A regra já cria uma Activity limpa para cada teste. Recriá-la aqui deixa
-        // duas raízes Compose concorrendo pelo idling resource no emulador.
-        InovaGabApp.instance.sessionManager.clear()
-        composeRule.waitUntil(timeoutMillis = 20_000) {
-            composeRule.onAllNodesWithTag(TestTags.LOGIN_EMAIL)
-                .fetchSemanticsNodes().isNotEmpty()
-        }
+        waitForTag(TestTags.LOGIN_EMAIL)
         requireBackend()
-        composeRule.waitForIdle()
+    }
+
+    private fun waitForTag(tag: String, timeoutMillis: Long = 20_000) {
+        composeRule.waitUntil(timeoutMillis = timeoutMillis) {
+            composeRule.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty()
+        }
     }
 
     private fun login(email: String, password: String) {
@@ -119,6 +118,7 @@ class Sprint2JourneyInstrumentedTest {
         val (email, pass) = requireCreds("operador1")
         login(email, pass)
         waitForLoggedProfile(Perfil.OPERADOR)
+        waitForTag(TestTags.HOME_OPERADOR)
         composeRule.onNodeWithTag(TestTags.HOME_OPERADOR).assertIsDisplayed()
         EvidenceRecorder.record(composeRule, "A02", "home_operador", "passed")
 
@@ -131,11 +131,13 @@ class Sprint2JourneyInstrumentedTest {
         }
         EvidenceRecorder.record(composeRule, "A02", "orientacoes_lista", "passed")
         composeRule.onNodeWithText("Voltar").performClick()
+        waitForTag(TestTags.HOME_OPERADOR)
 
         composeRule.onNodeWithText("Cadastrar ideia").performClick()
         composeRule.onNodeWithTag(TestTags.IDEIA_FORM_TITULO).assertIsDisplayed()
         EvidenceRecorder.record(composeRule, "A02", "ideia_form_nova", "passed")
         composeRule.onNodeWithText("Cancelar").performClick()
+        waitForTag(TestTags.HOME_OPERADOR)
 
         composeRule.onNodeWithText("Minhas ideias").performClick()
         composeRule.waitUntil(20_000) {
@@ -146,6 +148,7 @@ class Sprint2JourneyInstrumentedTest {
         }
         EvidenceRecorder.record(composeRule, "A02", "minhas_ideias", "passed")
         composeRule.onNodeWithText("Voltar").performClick()
+        waitForTag(TestTags.HOME_OPERADOR)
 
         composeRule.onNodeWithText("Ranking").performClick()
         composeRule.waitUntil(20_000) {
@@ -156,7 +159,7 @@ class Sprint2JourneyInstrumentedTest {
         }
         EvidenceRecorder.record(composeRule, "A02", "ranking", "passed")
         composeRule.onNodeWithText("Voltar").performClick()
-        logoutFromHome()
+        waitForTag(TestTags.HOME_OPERADOR)
     }
 
     @Test
@@ -164,6 +167,7 @@ class Sprint2JourneyInstrumentedTest {
         val (email, pass) = requireCreds("gestor")
         login(email, pass)
         waitForLoggedProfile(Perfil.GESTOR)
+        waitForTag(TestTags.HOME_GESTOR)
         composeRule.onNodeWithTag(TestTags.HOME_GESTOR).assertIsDisplayed()
         EvidenceRecorder.record(composeRule, "A03", "home_gestor", "passed")
 
@@ -190,12 +194,13 @@ class Sprint2JourneyInstrumentedTest {
             )
         }
         composeRule.onNodeWithText("Voltar").performClick()
+        waitForTag(TestTags.HOME_GESTOR)
 
         composeRule.onNodeWithText("Projetos").performClick()
         composeRule.waitForIdle()
         EvidenceRecorder.record(composeRule, "A03", "projetos_lista", "passed")
         composeRule.onNodeWithText("Voltar").performClick()
-        logoutFromHome()
+        waitForTag(TestTags.HOME_GESTOR)
     }
 
     @Test
@@ -203,6 +208,7 @@ class Sprint2JourneyInstrumentedTest {
         val (email, pass) = requireCreds("lider")
         login(email, pass)
         waitForLoggedProfile(Perfil.LIDER)
+        waitForTag(TestTags.HOME_LIDER)
         composeRule.onNodeWithTag(TestTags.HOME_LIDER).assertIsDisplayed()
         EvidenceRecorder.record(composeRule, "A04", "home_lider", "passed")
 
@@ -215,6 +221,7 @@ class Sprint2JourneyInstrumentedTest {
         }
         EvidenceRecorder.record(composeRule, "A04", "lider_orientacoes", "passed")
         composeRule.onNodeWithText("Voltar").performClick()
+        waitForTag(TestTags.HOME_LIDER)
 
         composeRule.onNodeWithText("Dashboard").performClick()
         composeRule.waitUntil(25_000) {
@@ -227,6 +234,6 @@ class Sprint2JourneyInstrumentedTest {
         composeRule.waitForIdle()
         EvidenceRecorder.record(composeRule, "A04", "dashboard_filtros", "passed")
         composeRule.onNodeWithText("Voltar").performClick()
-        logoutFromHome()
+        waitForTag(TestTags.HOME_LIDER)
     }
 }
