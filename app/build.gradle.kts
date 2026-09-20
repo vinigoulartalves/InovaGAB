@@ -40,6 +40,7 @@ android {
     }
 
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -93,7 +94,11 @@ dependencies {
 
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
 
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.2")
+
     testImplementation("junit:junit:4.13.2")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation("androidx.test:runner:1.6.2")
     testImplementation("com.squareup.moshi:moshi-kotlin:1.15.1")
 
     debugImplementation("androidx.compose.ui:ui-tooling")

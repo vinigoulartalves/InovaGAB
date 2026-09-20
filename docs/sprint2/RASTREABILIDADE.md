@@ -32,10 +32,10 @@ Status de implementação: **backend etapas 2–6** no repositório; **Android e
 |---|---|---|---|---|---|---|
 | R-EST-01 | Listar com filtros vigente/categoria | `GET /api/v1/estrategias` | Operador/Gestor/Líder consulta orientações | Filtro vigente | `EstrategiasIdeiasTests` + HTTP | OBR |
 | R-EST-02 | CRUD líder | `POST/PUT/DELETE /api/v1/estrategias` | `OrientacaoFormScreen`, `LiderViewModel` | Role LIDER vs OPERADOR 403 | E2E líder | OBR |
-| R-EST-03 | Histórico imutável | `GET /api/v1/estrategias/{id}/historico` | Tela histórico (prompt 8) | Edição gera entrada | Mongo snapshot | OBR |
+| R-EST-03 | Histórico imutável | `GET /api/v1/estrategias/{id}/historico` | `OrientacaoFormScreen` (lista) | Edição gera entrada | Mongo snapshot | OBR |
 | R-EST-04 | Vigência SP + datas civis | (regra) | Formulário datas | Estratégia vencida bloqueia ideia | Teste relógio injetável | OBR |
 | R-EST-05 | Exclusão lógica + If-Match | `DELETE` + header | Confirmação exclusão | 409 versão errada | Postman | OBR |
-| R-EST-06 | Categoria/campanha | campos DTO | UI líder (prompt 8) | Payload create | OpenAPI exemplo | OBR |
+| R-EST-06 | Categoria/campanha | campos DTO | `OrientacaoFormScreen` | Payload create | OpenAPI exemplo | OBR |
 
 ---
 
@@ -86,7 +86,7 @@ Status de implementação: **backend etapas 2–6** no repositório; **Android e
 | R-REL-02 | ROI investimento zero null | (regra) | UI "Não aplicável" | Projeto investimento 0 | Unit relatório | OBR |
 | R-REL-03 | Por estratégia | `GET /api/v1/relatorios/estrategias` | Filtros dashboard | Agregação driver | Log pipeline | OBR |
 | R-REL-04 | Projeto individual | `GET /api/v1/relatorios/projetos/{id}` | Detalhe | Atrasado prazo | HTTP | OBR |
-| R-REL-05 | Gráficos barras/status | séries no dashboard | Compose Canvas (prompt 8) | Séries não vazias seed | Vídeo demo | OBR |
+| R-REL-05 | Gráficos barras/status | séries no dashboard | `DashboardCharts.kt` | Séries API seed A+B | Vídeo demo pendente | OBR |
 | R-REL-06 | Excluídos fora do total | (regra) | — | DELETE projeto altera totais | Integração | OBR |
 
 ---
@@ -95,7 +95,7 @@ Status de implementação: **backend etapas 2–6** no repositório; **Android e
 
 | ID | Requisito | Endpoint | Tela Android | Teste | Evidência | Pri |
 |---|---|---|---|---|---|---|
-| R-IA-01 | Análise real Gemini | `POST /api/v1/ideias/{id}/analises-ia` | Botão gestão (prompt 8) | Opt-in chave real | Log sanitizado | PLUS |
+| R-IA-01 | Análise real Gemini | `POST /api/v1/ideias/{id}/analises-ia` | `GestaoIdeiasScreen` | Opt-in chave real | Log sanitizado | PLUS |
 | R-IA-02 | Histórico análises | `GET .../analises-ia` | Lista análises | Paginação | Postman | PLUS |
 | R-IA-03 | Não altera status/prioridade | (regra) | Aplicar via avaliação | POST IA não muda ideia | Assert DB | PLUS |
 | R-IA-04 | Indisponível sem chave | 503 ProblemDetails | Mensagem erro | Sem JSON fake | Teste Test env | PLUS |

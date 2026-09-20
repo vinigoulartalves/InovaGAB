@@ -13,4 +13,7 @@
     <ProjectReference Include="..\InovaGAB.Application\InovaGAB.Application.csproj" />
     <ProjectReference Include="..\InovaGAB.Domain\InovaGAB.Domain.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="InovaGAB.UnitTests" />
+  </ItemGroup>
 </Project>
