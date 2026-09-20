@@ -7,6 +7,8 @@ import com.fiap.inovagab.data.model.PrioridadeIdeia
 import com.fiap.inovagab.data.model.Projeto
 import com.fiap.inovagab.data.model.StatusIdeia
 import com.fiap.inovagab.data.model.StatusProjeto
+import com.fiap.inovagab.InovaGabApp
+import com.fiap.inovagab.core.session.AppSession
 import com.fiap.inovagab.data.repository.IdeiaRepository
 import com.fiap.inovagab.data.repository.ProjetoRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -33,9 +35,12 @@ data class ProjetoFormUiState(
     val nome: String = "",
     val descricao: String = "",
     val ideiaId: String = "",
+    val estrategiaId: String = "",
     val responsavel: String = "",
+    val responsavelId: String = "",
     val etapa: String = "",
     val status: StatusProjeto = StatusProjeto.PLANEJADO,
+    val versao: Int = 1,
     val investimento: String = "",
     val retornoFinanceiro: String = "",
     val reducaoCustos: String = "",
@@ -51,8 +56,8 @@ data class ProjetoFormUiState(
 }
 
 class GestorViewModel(
-    private val repository: IdeiaRepository = IdeiaRepository(),
-    private val projetoRepository: ProjetoRepository = ProjetoRepository()
+    private val repository: IdeiaRepository = InovaGabApp.instance.ideiaRepository,
+    private val projetoRepository: ProjetoRepository = InovaGabApp.instance.projetoRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(GestaoIdeiasUiState())
@@ -89,16 +94,10 @@ class GestorViewModel(
         if (ideia.id.isBlank() || ideia.prioridade == prioridade) return
 
         viewModelScope.launch {
-            repository.atualizarPrioridade(ideia.id, prioridade).fold(
+            repository.atualizarPrioridade(ideia, prioridade).fold(
                 onSuccess = {
-                    _state.update { atual ->
-                        atual.copy(
-                            ideias = atual.ideias.map {
-                                if (it.id == ideia.id) it.copy(prioridade = prioridade) else it
-                            },
-                            erro = null
-                        )
-                    }
+                    carregarIdeias()
+                    _state.update { it.copy(erro = null) }
                 },
                 onFailure = { erro ->
                     _state.update {
@@ -112,27 +111,17 @@ class GestorViewModel(
     fun alterarStatus(ideia: Ideia, novoStatus: StatusIdeia) {
         if (ideia.id.isBlank() || ideia.status == novoStatus) return
 
-        val jaEstavaAprovada = ideia.status == StatusIdeia.APROVADA
-
         viewModelScope.launch {
             repository.atualizarStatusComPontuacao(ideia, novoStatus).fold(
                 onSuccess = {
-                    val mensagemSucesso = if (
-                        novoStatus == StatusIdeia.APROVADA && !jaEstavaAprovada
-                    ) {
-                        "Ideia aprovada! ${IdeiaRepository.PONTOS_POR_APROVACAO} pontos somados ao autor."
+                    val mensagemSucesso = if (novoStatus == StatusIdeia.APROVADA) {
+                        "Ideia aprovada com sucesso."
                     } else {
                         null
                     }
-
+                    carregarIdeias()
                     _state.update { atual ->
-                        atual.copy(
-                            ideias = atual.ideias.map {
-                                if (it.id == ideia.id) it.copy(status = novoStatus) else it
-                            },
-                            erro = null,
-                            mensagem = mensagemSucesso
-                        )
+                        atual.copy(erro = null, mensagem = mensagemSucesso)
                     }
                 },
                 onFailure = { erro ->
@@ -191,6 +180,9 @@ class GestorViewModel(
                                 descricao = projeto.descricao,
                                 ideiaId = projeto.ideiaId,
                                 responsavel = projeto.responsavel,
+                                responsavelId = projeto.responsavelId,
+                                estrategiaId = projeto.estrategiaId,
+                                versao = projeto.versao,
                                 etapa = projeto.etapa,
                                 status = projeto.status,
                                 investimento = formatarValorEdicao(projeto.investimento),
@@ -297,6 +289,8 @@ class GestorViewModel(
 
         _projetoFormState.update { it.copy(salvando = true, erro = null) }
 
+        val gestorId = AppSession.manager.currentUser.value?.uid.orEmpty()
+
         viewModelScope.launch {
             val resultado = if (atual.isEdicao) {
                 projetoRepository.atualizar(
@@ -305,9 +299,12 @@ class GestorViewModel(
                         nome = nome,
                         descricao = descricao,
                         ideiaId = atual.ideiaId,
+                        estrategiaId = atual.estrategiaId,
                         responsavel = responsavel,
+                        responsavelId = atual.responsavelId.ifBlank { gestorId },
                         etapa = etapa,
                         status = atual.status,
+                        versao = atual.versao,
                         investimento = investimento,
                         retornoFinanceiro = retornoFinanceiro,
                         reducaoCustos = reducaoCustos,
@@ -323,6 +320,7 @@ class GestorViewModel(
                         descricao = descricao,
                         ideiaId = atual.ideiaId,
                         responsavel = responsavel,
+                        responsavelId = gestorId,
                         etapa = etapa,
                         status = atual.status,
                         investimento = investimento,

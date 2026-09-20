@@ -4,8 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fiap.inovagab.data.model.Orientacao
 import com.fiap.inovagab.data.model.Projeto
+import com.fiap.inovagab.InovaGabApp
 import com.fiap.inovagab.data.repository.OrientacaoRepository
 import com.fiap.inovagab.data.repository.ProjetoRepository
+import com.fiap.inovagab.data.repository.RelatorioRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -50,8 +52,9 @@ data class OrientacaoFormUiState(
 }
 
 class LiderViewModel(
-    private val repository: OrientacaoRepository = OrientacaoRepository(),
-    private val projetoRepository: ProjetoRepository = ProjetoRepository()
+    private val repository: OrientacaoRepository = InovaGabApp.instance.orientacaoRepository,
+    private val projetoRepository: ProjetoRepository = InovaGabApp.instance.projetoRepository,
+    private val relatorioRepository: RelatorioRepository = InovaGabApp.instance.relatorioRepository
 ) : ViewModel() {
 
     private val _listState = MutableStateFlow(OrientacoesListUiState())
@@ -69,9 +72,9 @@ class LiderViewModel(
     fun carregarDashboard() {
         _dashboardState.update { it.copy(carregando = true, erro = null) }
         viewModelScope.launch {
-            projetoRepository.listar().fold(
-                onSuccess = { projetos ->
-                    _dashboardState.value = calcularDashboard(projetos)
+            relatorioRepository.carregarDashboard().fold(
+                onSuccess = { dashboard ->
+                    _dashboardState.value = dashboard
                 },
                 onFailure = { erro ->
                     _dashboardState.update {
@@ -83,36 +86,6 @@ class LiderViewModel(
                 }
             )
         }
-    }
-
-    private fun calcularDashboard(projetos: List<Projeto>): DashboardUiState {
-        val totalProjetos = projetos.size
-        val investimentoTotal = projetos.sumOf { it.investimento }
-        val retornoTotal = projetos.sumOf { it.retornoFinanceiro }
-        val lucroObtido = retornoTotal - investimentoTotal
-        val roiGeral = if (investimentoTotal == 0.0) {
-            0.0
-        } else {
-            ((retornoTotal - investimentoTotal) / investimentoTotal) * 100
-        }
-        val reducaoCustosTotal = projetos.sumOf { it.reducaoCustos }
-        val ganhoProdutividadeMedio = if (projetos.isEmpty()) {
-            0.0
-        } else {
-            projetos.sumOf { it.ganhoProdutividade } / projetos.size
-        }
-
-        return DashboardUiState(
-            carregando = false,
-            erro = null,
-            totalProjetos = totalProjetos,
-            investimentoTotal = investimentoTotal,
-            retornoTotal = retornoTotal,
-            lucroObtido = lucroObtido,
-            roiGeral = roiGeral,
-            reducaoCustosTotal = reducaoCustosTotal,
-            ganhoProdutividadeMedio = ganhoProdutividadeMedio
-        )
     }
 
     fun consultarProjetos() {

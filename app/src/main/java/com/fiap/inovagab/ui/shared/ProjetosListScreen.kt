@@ -37,7 +37,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.fiap.inovagab.core.session.SessionManager
+import com.fiap.inovagab.core.session.AppSession
 import com.fiap.inovagab.core.ui.components.AppCard
 import com.fiap.inovagab.core.ui.effects.OnResumeEffect
 import com.fiap.inovagab.data.model.Perfil
@@ -59,7 +59,7 @@ fun ProjetosListScreen(
     gestorViewModel: GestorViewModel = viewModel(),
     liderViewModel: LiderViewModel = viewModel()
 ) {
-    val usuario by SessionManager.currentUser.collectAsState()
+    val usuario by AppSession.manager.currentUser.collectAsState()
     val perfil = usuario?.perfil
     val isGestor = perfil == Perfil.GESTOR
     val isLider = perfil == Perfil.LIDER

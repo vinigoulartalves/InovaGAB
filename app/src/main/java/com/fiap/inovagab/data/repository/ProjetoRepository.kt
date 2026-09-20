@@ -1,59 +1,88 @@
 package com.fiap.inovagab.data.repository
 
+import com.fiap.inovagab.core.network.ApiCallRunner
+import com.fiap.inovagab.core.session.SessionManager
 import com.fiap.inovagab.data.model.Projeto
-import com.fiap.inovagab.data.model.StatusProjeto
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.Query
-import kotlinx.coroutines.tasks.await
+import com.fiap.inovagab.data.remote.api.EstrategiasApi
+import com.fiap.inovagab.data.remote.api.ProjetosApi
+import com.fiap.inovagab.data.remote.api.UsuariosApi
+import com.fiap.inovagab.data.remote.dto.ProjetoCreateRequestDto
+import com.fiap.inovagab.data.remote.dto.ProjetoUpdateRequestDto
+import com.fiap.inovagab.data.remote.fetchAllPages
+import com.fiap.inovagab.data.remote.toMoneyBigDecimal
+import com.fiap.inovagab.data.remote.toProjeto
 
 class ProjetoRepository(
-    private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
+    private val projetosApi: ProjetosApi,
+    private val usuariosApi: UsuariosApi,
+    private val estrategiasApi: EstrategiasApi,
+    private val sessionManager: SessionManager
 ) {
 
-    private val collection = firestore.collection("projetos")
-
-    suspend fun listar(): Result<List<Projeto>> = runCatching {
-        val snap = collection
-            .orderBy("criadoEm", Query.Direction.DESCENDING)
-            .get()
-            .await()
-        snap.documents.mapNotNull { doc ->
-            doc.toObject(Projeto::class.java)?.copy(id = doc.id)
-        }
+    suspend fun listar(): Result<List<Projeto>> = ApiCallRunner.run {
+        fetchAllPages { page, size -> projetosApi.list(page, size) }
+            .map { it.toProjeto() }
     }
 
-    suspend fun buscarPorId(id: String): Result<Projeto?> = runCatching {
-        require(id.isNotBlank()) { "ID do projeto é obrigatório." }
-        val snap = collection.document(id).get().await()
-        if (!snap.exists()) null
-        else snap.toObject(Projeto::class.java)?.copy(id = snap.id)
+    suspend fun buscarPorId(id: String): Result<Projeto?> = ApiCallRunner.run {
+        projetosApi.get(id).toProjeto()
     }
 
-    suspend fun criar(projeto: Projeto): Result<String> = runCatching {
-        val dados = projetoParaMap(projeto)
-        val ref = collection.add(dados).await()
-        ref.id
+    suspend fun criar(projeto: Projeto): Result<String> = ApiCallRunner.run {
+        val estrategiaId = projeto.estrategiaId.ifBlank { primeiraEstrategiaVigente() }
+        val responsavelId = projeto.responsavelId.ifBlank { responsavelPadrao() }
+        val detalhe = projetosApi.create(
+            ProjetoCreateRequestDto(
+                nome = projeto.nome,
+                descricao = projeto.descricao,
+                estrategiaId = estrategiaId,
+                responsavelId = responsavelId,
+                etapa = projeto.etapa,
+                status = projeto.status.name,
+                investimento = projeto.investimento.toMoneyBigDecimal(),
+                retornoFinanceiro = projeto.retornoFinanceiro.toMoneyBigDecimal(),
+                reducaoCustos = projeto.reducaoCustos.toMoneyBigDecimal(),
+                ganhoProdutividade = projeto.ganhoProdutividade.toMoneyBigDecimal(),
+                prazo = projeto.prazo
+            )
+        )
+        detalhe.id
     }
 
-    suspend fun atualizar(projeto: Projeto): Result<Unit> = runCatching {
-        require(projeto.id.isNotBlank()) { "ID do projeto é obrigatório para atualização." }
-        val dados = projetoParaMap(projeto)
-        collection.document(projeto.id).update(dados).await()
+    suspend fun atualizar(projeto: Projeto): Result<Unit> = ApiCallRunner.run {
+        val responsavelId = projeto.responsavelId.ifBlank { responsavelPadrao() }
+        projetosApi.update(
+            projeto.id,
+            ProjetoUpdateRequestDto(
+                versao = projeto.versao,
+                nome = projeto.nome,
+                descricao = projeto.descricao,
+                responsavelId = responsavelId,
+                etapa = projeto.etapa,
+                status = projeto.status.name,
+                investimento = projeto.investimento.toMoneyBigDecimal(),
+                retornoFinanceiro = projeto.retornoFinanceiro.toMoneyBigDecimal(),
+                reducaoCustos = projeto.reducaoCustos.toMoneyBigDecimal(),
+                ganhoProdutividade = projeto.ganhoProdutividade.toMoneyBigDecimal(),
+                prazo = projeto.prazo
+            )
+        )
         Unit
     }
 
-    private fun projetoParaMap(projeto: Projeto): Map<String, Any> = mapOf(
-        "nome" to projeto.nome,
-        "descricao" to projeto.descricao,
-        "ideiaId" to projeto.ideiaId,
-        "responsavel" to projeto.responsavel,
-        "etapa" to projeto.etapa,
-        "status" to (projeto.status.name.ifBlank { StatusProjeto.PLANEJADO.name }),
-        "investimento" to projeto.investimento,
-        "retornoFinanceiro" to projeto.retornoFinanceiro,
-        "reducaoCustos" to projeto.reducaoCustos,
-        "ganhoProdutividade" to projeto.ganhoProdutividade,
-        "prazo" to projeto.prazo,
-        "criadoEm" to projeto.criadoEm
-    )
+    private suspend fun primeiraEstrategiaVigente(): String {
+        val page = estrategiasApi.list(page = 1, pageSize = 1, vigente = true)
+        return page.items.firstOrNull()?.id ?: error("Estratégia vigente não encontrada.")
+    }
+
+    private suspend fun responsavelPadrao(): String {
+        val gestorId = sessionManager.currentUser.value?.uid
+        if (!gestorId.isNullOrBlank()) {
+            val lista = usuariosApi.responsaveis()
+            if (lista.any { it.id == gestorId }) return gestorId
+            return lista.firstOrNull()?.id ?: gestorId
+        }
+        return usuariosApi.responsaveis().firstOrNull()?.id
+            ?: error("Nenhum gestor responsável disponível.")
+    }
 }

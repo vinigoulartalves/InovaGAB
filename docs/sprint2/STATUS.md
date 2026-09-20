@@ -1,54 +1,57 @@
 # InovaGAB Sprint 2 — STATUS
 
 **Atualizado em:** 2026-09-20 (UTC)  
-**Etapa atual:** 6 — Análises IA (Gemini)  
-**Branch:** `cursor/sprint2-backend-foundation-befe`
+**Etapa atual:** 7 — Android Retrofit (integração parcial)  
+**Branch:** `cursor/sprint2-backend-foundation-befe` (Android na mesma árvore)
 
 ---
 
-## 1. Resumo etapa 6
+## 1. Resumo etapa 7 (Android)
 
 | Item | Estado |
 |---|---|
-| `POST/GET /api/v1/ideias/{id}/analises-ia` (GESTOR) | **Implementado** |
-| Cliente HTTP Gemini (`generateContent` + JSON Schema) | **Implementado** |
-| `AI__Model` configurável (padrão `gemini-2.0-flash`) | **Implementado** |
-| Persistência com provedor/modelo/promptVersion/entradaHash/versão | **Implementado** |
-| Cache por hash+modelo+prompt (sem re-chamar API) | **Implementado** |
-| Flag `desatualizada` após edição da ideia | **Implementado** |
-| IA não altera status/prioridade/pontos | **Implementado** |
-| 503 sem chave/desabilitada; 429/502/504 sem segredos | **Implementado** |
-| Rate limit `ia-analise` (10/min por usuário) | **Implementado** |
-| Testes HTTP mock (`IdeiaAnalysisTests`) | **Implementado** — requer Mongo |
-| Teste real opt-in (`InovaGAB.IaExternalTests`) | **Implementado** — requer `AI_API_KEY` |
-| Evidência chamada real | **PENDENTE** — ver `IA_EVIDENCIA.md` |
+| Retrofit + OkHttp + Moshi (BigDecimal monetário) | **Implementado** |
+| DTOs / APIs / mappers REST (`api/v1`) | **Implementado** |
+| Cinco repositórios migrados de Firebase → API | **Implementado** |
+| TokenStore cifrado (EncryptedSharedPreferences + Keystore) | **Implementado** |
+| Bearer + refresh (cliente separado, 1 retry) | **Implementado** |
+| Dashboard líder via `/relatorios/dashboard` (sem cálculo local) | **Implementado** |
+| Ranking via `/ranking` (sem Firestore) | **Implementado** |
+| Sem gravação de pontos no app | **Implementado** |
+| `BASE_URL` debug `http://10.0.2.2:8080/`; release HTTPS placeholder | **Implementado** |
+| Cleartext só debug (`network_security_config`) | **Implementado** |
+| Telas existentes ligadas aos repositórios REST | **Implementado** |
+| Botão IA / telas novas (prompt 8) | **Não iniciado** (parar antes, conforme escopo) |
+| `./gradlew :app:assembleDebug` | **OK** (agente Cloud) |
+| `./gradlew :app:testDebugUnitTest` | **OK** (`MoneyMoshiTest`) |
+| Execução em emulador/dispositivo | **Não executada** (sem SDK/emulador no agente) |
 
-Documentação: `docs/sprint2/IA_GEMINI.md`, `docs/sprint2/IA_EVIDENCIA.md`.
+Firebase remoto **não alterado**; dependências/plugins Firebase removidos do módulo `app`; `google-services.json` permanece no repositório sem uso.
+
+### Configuração API no dispositivo
+
+- Emulador: `BuildConfig.API_BASE_URL` → `http://10.0.2.2:8080/`
+- Aparelho físico: alterar `buildTypes.debug.buildConfigField` para o IP LAN do PC ou usar `adb reverse tcp:8080 tcp:8080` e `http://127.0.0.1:8080/`
+- Backend deve estar em HTTP no dev (sem redirect para HTTPS inexistente)
 
 ---
 
-## 2. Etapas anteriores (resumo)
+## 2. Backend (etapas 2–6)
 
-- **5:** projetos, conversão, relatórios, ranking  
-- **4:** estratégias e ideias  
-- **3:** autenticação e seed  
+- Auth, estratégias, ideias, projetos, relatórios, ranking, IA Gemini — ver commits na branch `cursor/sprint2-backend-foundation-befe`.
 
 ---
 
-## 3. Testes (agente Cloud)
+## 3. Testes backend (agente Cloud)
 
 ```bash
 cd backend && dotnet build -c Release && dotnet test ../tests/InovaGAB.IntegrationTests -c Release
 ```
 
-- **Build:** OK  
-- **Integração:** bloqueada sem `MONGODB_URI`  
-- **IA real:** `dotnet test ../tests/InovaGAB.IaExternalTests` com `AI_API_KEY` + Mongo
-
-Com Docker: `docker compose --profile tests run --rm test-runner`
+Requer `MONGODB_URI` para integração.
 
 ---
 
 ## 4. Próxima etapa
 
-**Prompt 7+:** integração Android (Retrofit), telas e CI.
+**Prompt 8:** telas IA no Android, gráficos dashboard, polish UI — **não incluído nesta entrega**.

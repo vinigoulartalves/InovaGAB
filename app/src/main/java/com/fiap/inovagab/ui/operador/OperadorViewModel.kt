@@ -2,7 +2,8 @@ package com.fiap.inovagab.ui.operador
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.fiap.inovagab.core.session.SessionManager
+import com.fiap.inovagab.InovaGabApp
+import com.fiap.inovagab.core.session.AppSession
 import com.fiap.inovagab.data.model.Ideia
 import com.fiap.inovagab.data.model.PrioridadeIdeia
 import com.fiap.inovagab.data.model.StatusIdeia
@@ -30,7 +31,7 @@ data class MinhasIdeiasUiState(
 )
 
 class OperadorViewModel(
-    private val repository: IdeiaRepository = IdeiaRepository()
+    private val repository: IdeiaRepository = InovaGabApp.instance.ideiaRepository
 ) : ViewModel() {
 
     private val _formState = MutableStateFlow(IdeiaFormUiState())
@@ -75,7 +76,7 @@ class OperadorViewModel(
             return
         }
 
-        val usuario = SessionManager.currentUser.value
+        val usuario = AppSession.manager.currentUser.value
         if (usuario == null || usuario.uid.isBlank()) {
             _formState.update {
                 it.copy(
@@ -89,6 +90,17 @@ class OperadorViewModel(
         _formState.update { it.copy(salvando = true, erro = null, sucesso = null) }
 
         viewModelScope.launch {
+            val estrategiaId = runCatching { repository.resolverEstrategiaVigente() }
+                .getOrElse { erro ->
+                    _formState.update {
+                        it.copy(
+                            salvando = false,
+                            erro = erro.message ?: "Nenhuma estratégia vigente para vincular a ideia."
+                        )
+                    }
+                    return@launch
+                }
+
             val ideia = Ideia(
                 titulo = titulo,
                 area = area,
@@ -96,14 +108,15 @@ class OperadorViewModel(
                 autorId = usuario.uid,
                 autorNome = usuario.nome,
                 status = StatusIdeia.ENVIADA,
-                prioridade = PrioridadeIdeia.MEDIA
+                prioridade = PrioridadeIdeia.MEDIA,
+                estrategiaId = estrategiaId
             )
 
             repository.criar(ideia).fold(
                 onSuccess = {
                     _formState.update {
                         IdeiaFormUiState(
-                            sucesso = "Ideia cadastrada com sucesso! Você ganhou 10 pontos.",
+                            sucesso = "Ideia cadastrada com sucesso!",
                             concluido = true
                         )
                     }
@@ -121,7 +134,7 @@ class OperadorViewModel(
     }
 
     fun carregarMinhasIdeias() {
-        val usuario = SessionManager.currentUser.value
+        val usuario = AppSession.manager.currentUser.value
         if (usuario == null || usuario.uid.isBlank()) {
             _listState.update {
                 it.copy(
