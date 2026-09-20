@@ -7,7 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace InovaGAB.IntegrationTests.Infrastructure;
 
-internal static class AuthTestSeed
+public static class AuthTestSeed
 {
     public const string OperadorEmail = "operador-test@inovagab.local";
     public const string GestorEmail = "gestor-test@inovagab.local";

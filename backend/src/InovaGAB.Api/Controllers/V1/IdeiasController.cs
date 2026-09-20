@@ -7,6 +7,7 @@ using InovaGAB.Application.Projetos;
 using InovaGAB.Application.Projetos.Dtos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace InovaGAB.Api.Controllers.V1;
 
@@ -17,11 +18,16 @@ public sealed class IdeiasController : ControllerBase
 {
     private readonly IIdeiaService _service;
     private readonly IProjetoService _projetoService;
+    private readonly IIdeaAnalysisService _ideaAnalysisService;
 
-    public IdeiasController(IIdeiaService service, IProjetoService projetoService)
+    public IdeiasController(
+        IIdeiaService service,
+        IProjetoService projetoService,
+        IIdeaAnalysisService ideaAnalysisService)
     {
         _service = service;
         _projetoService = projetoService;
+        _ideaAnalysisService = ideaAnalysisService;
     }
 
     [HttpGet]
@@ -104,4 +110,26 @@ public sealed class IdeiasController : ControllerBase
             new { id = projeto.Id },
             projeto);
     }
+
+    [HttpPost("{id}/analises-ia")]
+    [Authorize(Policy = AuthPolicies.Gestor)]
+    [EnableRateLimiting("ia-analise")]
+    [ProducesResponseType(typeof(AnaliseIaDetalheDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
+    public async Task<ActionResult<AnaliseIaDetalheDto>> SolicitarAnaliseIa(
+        string id,
+        CancellationToken cancellationToken)
+    {
+        var analise = await _ideaAnalysisService.SolicitarAnaliseAsync(id, cancellationToken);
+        return Created($"/api/v1/ideias/{id}/analises-ia/{analise.Id}", analise);
+    }
+
+    [HttpGet("{id}/analises-ia")]
+    [Authorize(Policy = AuthPolicies.Gestor)]
+    public Task<PagedResultDto<AnaliseIaResumoDto>> ObterAnaliseIaHistorico(
+        string id,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        CancellationToken cancellationToken = default) =>
+        _ideaAnalysisService.ListarHistoricoAsync(id, page, pageSize, cancellationToken);
 }

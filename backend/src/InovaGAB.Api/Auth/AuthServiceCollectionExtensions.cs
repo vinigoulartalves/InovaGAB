@@ -58,6 +58,23 @@ public static class AuthServiceCollectionExtensions
                         QueueLimit = 0
                     }));
             options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+            options.AddPolicy("ia-analise", httpContext =>
+            {
+                var userId = httpContext.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                    ?? httpContext.User?.FindFirst("sub")?.Value
+                    ?? httpContext.Connection.RemoteIpAddress?.ToString()
+                    ?? "unknown";
+
+                return System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(
+                    userId,
+                    _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 10,
+                        Window = TimeSpan.FromMinutes(1),
+                        QueueLimit = 0
+                    });
+            });
         });
 
         return services;

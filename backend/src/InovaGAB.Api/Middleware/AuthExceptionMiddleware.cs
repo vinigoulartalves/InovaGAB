@@ -25,6 +25,16 @@ public sealed class AuthExceptionMiddleware
         {
             await WriteProblemAsync(context, ex.StatusCode, ex.Code, "Erro de negócio", ex.Message);
         }
+        catch (IaDependencyException ex)
+        {
+            var title = ex.StatusCode switch
+            {
+                429 => "Limite de IA",
+                504 => "Timeout de IA",
+                _ => "Dependência de IA"
+            };
+            await WriteProblemAsync(context, ex.StatusCode, ex.Code, title, ex.Message);
+        }
     }
 
     private static async Task WriteProblemAsync(

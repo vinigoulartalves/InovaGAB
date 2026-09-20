@@ -33,6 +33,8 @@ public sealed class InovaGabDbContext : DbContext
 
     public DbSet<Projeto> Projetos => Set<Projeto>();
 
+    public DbSet<IdeiaAnaliseIa> IdeiasAnalisesIa => Set<IdeiaAnaliseIa>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -95,6 +97,12 @@ public sealed class InovaGabDbContext : DbContext
             entity.Property(e => e.ReducaoCustos).HasPrecision(18, 4);
             entity.Property(e => e.GanhoProdutividade).HasPrecision(18, 4);
             entity.Property(e => e.Versao).IsConcurrencyToken();
+        });
+
+        modelBuilder.Entity<IdeiaAnaliseIa>(entity =>
+        {
+            entity.ToCollection("ideias_analises_ia");
+            entity.HasKey(e => e.Id);
         });
     }
 }

@@ -12,12 +12,25 @@ public sealed class InovaGabWebApplicationFactory : WebApplicationFactory<Progra
 
     public string DatabaseName { get; init; } = $"inovagab_auth_test_{Guid.NewGuid():N}";
 
+    public Action<IServiceCollection>? ConfigureTestServices { get; init; }
+
+    private readonly Dictionary<string, string?> _settings = new();
+
+    public void UseSetting(string key, string? value) => _settings[key] = value;
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Development");
 
+        foreach (var (key, value) in _settings)
+        {
+            builder.UseSetting(key, value ?? string.Empty);
+        }
+
         builder.ConfigureServices(services =>
         {
+            ConfigureTestServices?.Invoke(services);
+
             if (string.IsNullOrWhiteSpace(MongoConnectionString))
             {
                 return;

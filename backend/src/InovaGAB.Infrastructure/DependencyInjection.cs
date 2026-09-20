@@ -10,6 +10,7 @@ using InovaGAB.Infrastructure.Configuration;
 using InovaGAB.Infrastructure.Hosting;
 using InovaGAB.Infrastructure.Persistence;
 using InovaGAB.Infrastructure.Estrategias;
+using InovaGAB.Infrastructure.Ia;
 using InovaGAB.Infrastructure.Ideias;
 using InovaGAB.Infrastructure.Projetos;
 using InovaGAB.Infrastructure.Ranking;
@@ -71,6 +72,15 @@ public static class DependencyInjection
         services.AddScoped<RelatorioRepository>();
         services.AddScoped<IRelatorioService, RelatorioService>();
         services.AddScoped<IRankingService, RankingService>();
+        services.AddScoped<IIdeaAnalysisService, IdeiaAnalysisService>();
+        services.AddScoped<IGeminiIdeiaAnalysisClient, GeminiIdeiaAnalysisClient>();
+
+        services.AddHttpClient(GeminiIdeiaAnalysisClient.HttpClientName, (sp, client) =>
+        {
+            var ai = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<AiOptions>>().Value;
+            client.BaseAddress = ai.BaseUrl;
+            client.Timeout = TimeSpan.FromSeconds(Math.Max(5, ai.TimeoutSeconds));
+        });
 
         return services;
     }

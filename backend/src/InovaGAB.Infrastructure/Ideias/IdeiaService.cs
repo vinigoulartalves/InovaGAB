@@ -8,6 +8,7 @@ using InovaGAB.Domain.Usuarios;
 using InovaGAB.Infrastructure.Common;
 using InovaGAB.Infrastructure.Estrategias;
 using InovaGAB.Infrastructure.Persistence;
+using InovaGAB.Infrastructure.Ia;
 using InovaGAB.Infrastructure.Pontuacao;
 using InovaGAB.Infrastructure.Time;
 using Microsoft.EntityFrameworkCore;
@@ -206,6 +207,8 @@ public sealed class IdeiaService : IIdeiaService
         entity.Area = request.Area.Trim();
         entity.Versao++;
         entity.AtualizadoEmUtc = _clock.GetUtcNow();
+
+        await IdeiaAnalysisService.MarcarDesatualizadasAsync(_dbContext, entity.Id, cancellationToken);
 
         try
         {

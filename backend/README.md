@@ -48,6 +48,13 @@ dotnet test InovaGAB.sln -c Release
 
 Teste EF↔Mongo: `tests/InovaGAB.IntegrationTests/Persistence/MongoEfCoreCrudTests.cs` — requer `MONGODB_URI` (recomendado: `docker compose --profile tests run --rm test-runner`).
 
+## Análises IA (etapa 6, Plus)
+
+- `POST /api/v1/ideias/{id}/analises-ia` — gestor; Gemini real com saída JSON validada.
+- `GET /api/v1/ideias/{id}/analises-ia` — histórico paginado.
+- Configuração: `docs/sprint2/IA_GEMINI.md` (`AI_ENABLED`, `AI_API_KEY`, `AI_MODEL`).
+- Core sobe sem chave; análises retornam **503** `IA_INDISPONIVEL`.
+
 ## Projetos, relatórios e ranking (etapa 5)
 
 - `GET/POST/PUT/DELETE /api/v1/projetos` — gestor CRUD; líder consulta; operador 403.

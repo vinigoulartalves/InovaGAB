@@ -1,39 +1,37 @@
 # InovaGAB Sprint 2 — STATUS
 
 **Atualizado em:** 2026-09-20 (UTC)  
-**Etapa atual:** 5 — Projetos, conversão, relatórios e ranking  
+**Etapa atual:** 6 — Análises IA (Gemini)  
 **Branch:** `cursor/sprint2-backend-foundation-befe`
 
 ---
 
-## 1. Resumo etapa 5
+## 1. Resumo etapa 6
 
 | Item | Estado |
 |---|---|
-| CRUD projetos (GESTOR) + consulta (LIDER) | **Implementado** |
-| Operador sem acesso a projetos | **Implementado** (403) |
-| Criação direta rejeita `ideiaId` | **Implementado** |
-| Responsável gestor ativo + estratégia vigente | **Implementado** |
-| PUT preserva `ideiaId` / `estrategiaId` | **Implementado** |
-| Exclusão lógica + `If-Match` | **Implementado** |
-| `POST /ideias/{id}/projeto` transacional | **Implementado** |
-| Índice único parcial `ideiaId` em projetos | **Implementado** (driver) |
-| Relatórios LIDER (dashboard, estratégias, projeto) | **Implementado** (agregações Mongo) |
-| ROI agregado (não média de ROIs); investimento 0 → `null` | **Implementado** |
-| Ranking por eventos (sem e-mail) | **Implementado** |
-| Seed demo ampliado (A/B relatório) | **Implementado** |
-| Testes `ProjetosRelatoriosRankingTests` | **Implementado** — requer Mongo |
+| `POST/GET /api/v1/ideias/{id}/analises-ia` (GESTOR) | **Implementado** |
+| Cliente HTTP Gemini (`generateContent` + JSON Schema) | **Implementado** |
+| `AI__Model` configurável (padrão `gemini-2.0-flash`) | **Implementado** |
+| Persistência com provedor/modelo/promptVersion/entradaHash/versão | **Implementado** |
+| Cache por hash+modelo+prompt (sem re-chamar API) | **Implementado** |
+| Flag `desatualizada` após edição da ideia | **Implementado** |
+| IA não altera status/prioridade/pontos | **Implementado** |
+| 503 sem chave/desabilitada; 429/502/504 sem segredos | **Implementado** |
+| Rate limit `ia-analise` (10/min por usuário) | **Implementado** |
+| Testes HTTP mock (`IdeiaAnalysisTests`) | **Implementado** — requer Mongo |
+| Teste real opt-in (`InovaGAB.IaExternalTests`) | **Implementado** — requer `AI_API_KEY` |
+| Evidência chamada real | **PENDENTE** — ver `IA_EVIDENCIA.md` |
+
+Documentação: `docs/sprint2/IA_GEMINI.md`, `docs/sprint2/IA_EVIDENCIA.md`.
 
 ---
 
-## 2. Endpoints (etapas 3–5)
+## 2. Etapas anteriores (resumo)
 
-- Autenticação e usuários (etapa 3)
-- Estratégias e ideias (etapa 4)
-- `GET/POST/PUT/DELETE /api/v1/projetos`
-- `POST /api/v1/ideias/{id}/projeto`
-- `GET /api/v1/relatorios/dashboard`, `/estrategias`, `/projetos/{id}`
-- `GET /api/v1/ranking`
+- **5:** projetos, conversão, relatórios, ranking  
+- **4:** estratégias e ideias  
+- **3:** autenticação e seed  
 
 ---
 
@@ -44,7 +42,8 @@ cd backend && dotnet build -c Release && dotnet test ../tests/InovaGAB.Integrati
 ```
 
 - **Build:** OK  
-- **Testes:** bloqueados sem `MONGODB_URI` (mensagem explícita)
+- **Integração:** bloqueada sem `MONGODB_URI`  
+- **IA real:** `dotnet test ../tests/InovaGAB.IaExternalTests` com `AI_API_KEY` + Mongo
 
 Com Docker: `docker compose --profile tests run --rm test-runner`
 
@@ -52,4 +51,4 @@ Com Docker: `docker compose --profile tests run --rm test-runner`
 
 ## 4. Próxima etapa
 
-**Prompt 6+:** análises IA (Gemini), integração Android, CI completo.
+**Prompt 7+:** integração Android (Retrofit), telas e CI.
