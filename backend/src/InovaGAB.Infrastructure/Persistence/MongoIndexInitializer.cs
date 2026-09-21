@@ -26,7 +26,8 @@ public sealed class MongoIndexInitializer
         var database = _client.GetDatabase(_options.DatabaseName);
         var probes = database.GetCollection<MongoDB.Bson.BsonDocument>("integration_probes");
 
-        var indexKeys = Builders<MongoDB.Bson.BsonDocument>.IndexKeys.Ascending("name");
+        // EF Core Mongo persiste nomes de propriedade C# (PascalCase), não camelCase JSON.
+        var indexKeys = Builders<MongoDB.Bson.BsonDocument>.IndexKeys.Ascending("Name");
         var indexModel = new CreateIndexModel<MongoDB.Bson.BsonDocument>(
             indexKeys,
             new CreateIndexOptions { Name = "ix_integration_probes_name", Unique = false });
@@ -35,33 +36,33 @@ public sealed class MongoIndexInitializer
 
         var usuarios = database.GetCollection<MongoDB.Bson.BsonDocument>("usuarios");
         var usuarioEmailIndex = new CreateIndexModel<MongoDB.Bson.BsonDocument>(
-            Builders<MongoDB.Bson.BsonDocument>.IndexKeys.Ascending("emailNormalizado"),
+            Builders<MongoDB.Bson.BsonDocument>.IndexKeys.Ascending("EmailNormalizado"),
             new CreateIndexOptions { Name = "ux_usuarios_email_normalizado", Unique = true });
         await usuarios.Indexes.CreateOneAsync(usuarioEmailIndex, cancellationToken: cancellationToken);
 
         var refreshTokens = database.GetCollection<MongoDB.Bson.BsonDocument>("refresh_tokens");
         var refreshHashIndex = new CreateIndexModel<MongoDB.Bson.BsonDocument>(
-            Builders<MongoDB.Bson.BsonDocument>.IndexKeys.Ascending("tokenHash"),
+            Builders<MongoDB.Bson.BsonDocument>.IndexKeys.Ascending("TokenHash"),
             new CreateIndexOptions { Name = "ux_refresh_tokens_token_hash", Unique = true });
         await refreshTokens.Indexes.CreateOneAsync(refreshHashIndex, cancellationToken: cancellationToken);
 
         var eventos = database.GetCollection<MongoDB.Bson.BsonDocument>("eventos_pontuacao");
         var eventoUnique = new CreateIndexModel<MongoDB.Bson.BsonDocument>(
             Builders<MongoDB.Bson.BsonDocument>.IndexKeys
-                .Ascending("autorId")
-                .Ascending("ideiaId")
-                .Ascending("tipo"),
+                .Ascending("AutorId")
+                .Ascending("IdeiaId")
+                .Ascending("Tipo"),
             new CreateIndexOptions { Name = "ux_eventos_pontuacao_autor_ideia_tipo", Unique = true });
         await eventos.Indexes.CreateOneAsync(eventoUnique, cancellationToken: cancellationToken);
 
         var projetos = database.GetCollection<MongoDB.Bson.BsonDocument>("projetos");
         var projetoIdeiaIndex = new CreateIndexModel<MongoDB.Bson.BsonDocument>(
-            Builders<MongoDB.Bson.BsonDocument>.IndexKeys.Ascending("ideiaId"),
+            Builders<MongoDB.Bson.BsonDocument>.IndexKeys.Ascending("IdeiaId"),
             new CreateIndexOptions<MongoDB.Bson.BsonDocument>
             {
                 Name = "ux_projetos_ideia_id_parcial",
                 Unique = true,
-                PartialFilterExpression = new MongoDB.Bson.BsonDocument("ideiaId", new MongoDB.Bson.BsonDocument
+                PartialFilterExpression = new MongoDB.Bson.BsonDocument("IdeiaId", new MongoDB.Bson.BsonDocument
                 {
                     { "$exists", true },
                     { "$type", "string" },
