@@ -1,7 +1,6 @@
-using InovaGAB.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace InovaGAB.IntegrationTests.Infrastructure;
@@ -22,44 +21,38 @@ public sealed class InovaGabWebApplicationFactory : WebApplicationFactory<Progra
     {
         builder.UseEnvironment("Development");
 
+        var settings = new Dictionary<string, string?>
+        {
+            ["Mongo:ConnectionString"] = MongoConnectionString ?? string.Empty,
+            ["Mongo:DatabaseName"] = DatabaseName,
+            ["Jwt:Secret"] = "integration-test-secret-min-32-characters-long!",
+            ["Jwt:Issuer"] = "inovagab-test",
+            ["Jwt:Audience"] = "inovagab-test",
+            ["Jwt:AccessTokenMinutes"] = "15",
+            ["Jwt:RefreshTokenDays"] = "7",
+            ["Seed:Enabled"] = "false",
+            ["AI:Enabled"] = "false"
+        };
+
+        // Per-test settings must win over the safe defaults above.
         foreach (var (key, value) in _settings)
         {
-            builder.UseSetting(key, value ?? string.Empty);
+            settings[key] = value ?? string.Empty;
         }
 
-        builder.ConfigureServices(services =>
+        // Host configuration: available while Program.cs registers services.
+        foreach (var (key, value) in settings)
         {
-            ConfigureTestServices?.Invoke(services);
+            builder.UseSetting(key, value);
+        }
 
-            if (string.IsNullOrWhiteSpace(MongoConnectionString))
-            {
-                return;
-            }
+        // Appended as the LAST application configuration source so the same values
+        // also win over appsettings.*.json and environment variables such as
+        // Mongo__DatabaseName exported by docker compose. Every test therefore runs
+        // indexes, seed and queries inside its own isolated database.
+        builder.ConfigureAppConfiguration((_, configuration) =>
+            configuration.AddInMemoryCollection(settings));
 
-            var descriptors = services
-                .Where(d => d.ServiceType == typeof(DbContextOptions<InovaGabDbContext>)
-                    || d.ServiceType == typeof(InovaGabDbContext))
-                .ToList();
-
-            foreach (var descriptor in descriptors)
-            {
-                services.Remove(descriptor);
-            }
-
-            services.AddDbContext<InovaGabDbContext>(options =>
-            {
-                options.UseMongoDB(MongoConnectionString, DatabaseName);
-            });
-        });
-
-        builder.UseSetting("Mongo:ConnectionString", MongoConnectionString ?? string.Empty);
-        builder.UseSetting("Mongo:DatabaseName", DatabaseName);
-        builder.UseSetting("Jwt:Secret", "integration-test-secret-min-32-characters-long!");
-        builder.UseSetting("Jwt:Issuer", "inovagab-test");
-        builder.UseSetting("Jwt:Audience", "inovagab-test");
-        builder.UseSetting("Jwt:AccessTokenMinutes", "15");
-        builder.UseSetting("Jwt:RefreshTokenDays", "7");
-        builder.UseSetting("Seed:Enabled", "false");
-        builder.UseSetting("AI:Enabled", "false");
+        builder.ConfigureServices(services => ConfigureTestServices?.Invoke(services));
     }
 }

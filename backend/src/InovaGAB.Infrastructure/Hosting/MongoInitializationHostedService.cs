@@ -1,4 +1,5 @@
 using InovaGAB.Infrastructure.Persistence;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
@@ -6,16 +7,16 @@ namespace InovaGAB.Infrastructure.Hosting;
 
 public sealed class MongoInitializationHostedService : IHostedService
 {
-    private readonly MongoStartupInitializer _initializer;
+    private readonly IServiceScopeFactory _scopeFactory;
     private readonly MongoInitializationState _state;
     private readonly ILogger<MongoInitializationHostedService> _logger;
 
     public MongoInitializationHostedService(
-        MongoStartupInitializer initializer,
+        IServiceScopeFactory scopeFactory,
         MongoInitializationState state,
         ILogger<MongoInitializationHostedService> logger)
     {
-        _initializer = initializer;
+        _scopeFactory = scopeFactory;
         _state = state;
         _logger = logger;
     }
@@ -24,7 +25,11 @@ public sealed class MongoInitializationHostedService : IHostedService
     {
         try
         {
-            await _initializer.InitializeAsync(cancellationToken);
+            // MongoStartupInitializer depends on the scoped DbContext, so a hosted
+            // service (singleton) must resolve it from its own scope.
+            await using var scope = _scopeFactory.CreateAsyncScope();
+            var initializer = scope.ServiceProvider.GetRequiredService<MongoStartupInitializer>();
+            await initializer.InitializeAsync(cancellationToken);
             _state.MarkReady();
         }
         catch (Exception ex)

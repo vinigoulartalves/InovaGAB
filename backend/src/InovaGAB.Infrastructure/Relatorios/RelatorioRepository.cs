@@ -1,131 +1,85 @@
 using InovaGAB.Application.Relatorios.Dtos;
 using InovaGAB.Domain.Projetos;
-using InovaGAB.Infrastructure.Configuration;
+using InovaGAB.Infrastructure.Persistence;
 using InovaGAB.Infrastructure.Time;
-using Microsoft.Extensions.Options;
-using MongoDB.Bson;
-using MongoDB.Driver;
+using Microsoft.EntityFrameworkCore;
 
 namespace InovaGAB.Infrastructure.Relatorios;
 
 public sealed class RelatorioRepository
 {
-    private readonly IMongoDatabase _database;
+    private readonly InovaGabDbContext _dbContext;
     private readonly IVigenciaClock _clock;
 
-    public RelatorioRepository(IMongoClient client, IOptions<MongoOptions> options, IVigenciaClock clock)
+    public RelatorioRepository(InovaGabDbContext dbContext, IVigenciaClock clock)
     {
-        _database = client.GetDatabase(options.Value.DatabaseName);
+        _dbContext = dbContext;
         _clock = clock;
     }
 
     public async Task<RelatorioAgregado> AggregateAsync(DashboardFiltroDto filtro, CancellationToken cancellationToken)
     {
-        var match = BuildMatch(filtro);
-        var collection = _database.GetCollection<BsonDocument>("projetos");
+        // Simple equality filters are translated by the Mongo EF provider; date-range
+        // and grouping/aggregation run in memory because the provider cannot translate
+        // DateOnly comparisons or GroupBy/Sum over decimals reliably.
+        var query = _dbContext.Projetos.AsNoTracking()
+            .Where(p => p.ExcluidaEmUtc == null);
 
-        var totalsPipeline = new[]
+        if (!string.IsNullOrWhiteSpace(filtro.EstrategiaId))
         {
-            new BsonDocument("$match", match),
-            new BsonDocument("$group", new BsonDocument
-            {
-                { "_id", BsonNull.Value },
-                { "investimento", new BsonDocument("$sum", "$investimento") },
-                { "retorno", new BsonDocument("$sum", "$retornoFinanceiro") },
-                { "reducaoCustos", new BsonDocument("$sum", "$reducaoCustos") },
-                { "ganhoProdutividadeSum", new BsonDocument("$sum", "$ganhoProdutividade") },
-                { "count", new BsonDocument("$sum", 1) }
-            })
-        };
+            var estrategiaId = filtro.EstrategiaId;
+            query = query.Where(p => p.EstrategiaId == estrategiaId);
+        }
 
-        var totalsCursor = await collection.AggregateAsync<BsonDocument>(
-            totalsPipeline,
-            cancellationToken: cancellationToken);
-        var totalsDoc = await totalsCursor.FirstOrDefaultAsync(cancellationToken);
-
-        var investimento = totalsDoc is null ? 0m : ToDecimal(totalsDoc["investimento"]);
-        var retorno = totalsDoc is null ? 0m : ToDecimal(totalsDoc["retorno"]);
-        var reducao = totalsDoc is null ? 0m : ToDecimal(totalsDoc["reducaoCustos"]);
-        var ganhoSum = totalsDoc is null ? 0m : ToDecimal(totalsDoc["ganhoProdutividadeSum"]);
-        var count = totalsDoc is null ? 0 : totalsDoc["count"].AsInt32;
-
-        var porEstrategiaPipeline = new[]
+        if (!string.IsNullOrWhiteSpace(filtro.ProjetoId))
         {
-            new BsonDocument("$match", match),
-            new BsonDocument("$group", new BsonDocument
-            {
-                { "_id", "$estrategiaId" },
-                { "investimento", new BsonDocument("$sum", "$investimento") },
-                { "retorno", new BsonDocument("$sum", "$retornoFinanceiro") },
-                { "quantidade", new BsonDocument("$sum", 1) }
-            }),
-            new BsonDocument("$sort", new BsonDocument("_id", 1))
-        };
+            var projetoId = filtro.ProjetoId;
+            query = query.Where(p => p.Id == projetoId);
+        }
 
-        var porEstrategia = await collection
-            .Aggregate<BsonDocument>(porEstrategiaPipeline, cancellationToken: cancellationToken)
-            .ToListAsync(cancellationToken);
+        var projetos = await query.ToListAsync(cancellationToken);
 
-        var estrategiaIds = porEstrategia.Select(d => d["_id"].AsString).ToList();
+        var filtrados = projetos
+            .Where(p => filtro.Inicio is null || DateOnly.FromDateTime(p.CriadoEmUtc) >= filtro.Inicio.Value)
+            .Where(p => filtro.Fim is null || DateOnly.FromDateTime(p.CriadoEmUtc) <= filtro.Fim.Value)
+            .ToList();
+
+        var estrategiaIds = filtrados.Select(p => p.EstrategiaId).Distinct().ToList();
         var titulos = await LoadEstrategiaTitulosAsync(estrategiaIds, cancellationToken);
 
-        var statusPipeline = new[]
-        {
-            new BsonDocument("$match", match),
-            new BsonDocument("$group", new BsonDocument
-            {
-                { "_id", "$status" },
-                { "quantidade", new BsonDocument("$sum", 1) }
-            })
-        };
-
-        var statusDocs = await collection
-            .Aggregate<BsonDocument>(statusPipeline, cancellationToken: cancellationToken)
-            .ToListAsync(cancellationToken);
-
         var hoje = _clock.GetTodaySaoPaulo();
-        var atrasados = await CountAtrasadosAsync(match, hoje, cancellationToken);
 
         return new RelatorioAgregado
         {
-            InvestimentoTotal = investimento,
-            RetornoTotal = retorno,
-            ReducaoCustosTotal = reducao,
-            GanhoProdutividadeSum = ganhoSum,
-            ProjetoCount = count,
-            PorEstrategia = porEstrategia.Select(d =>
-            {
-                var id = d["_id"].AsString;
-                return new RelatorioEstrategiaAgg
+            InvestimentoTotal = filtrados.Sum(p => p.Investimento),
+            RetornoTotal = filtrados.Sum(p => p.RetornoFinanceiro),
+            ReducaoCustosTotal = filtrados.Sum(p => p.ReducaoCustos),
+            GanhoProdutividadeSum = filtrados.Sum(p => p.GanhoProdutividade),
+            ProjetoCount = filtrados.Count,
+            PorEstrategia = filtrados
+                .GroupBy(p => p.EstrategiaId)
+                .OrderBy(g => g.Key, StringComparer.Ordinal)
+                .Select(g => new RelatorioEstrategiaAgg
                 {
-                    EstrategiaId = id,
-                    Titulo = titulos.GetValueOrDefault(id, id),
-                    Investimento = ToDecimal(d["investimento"]),
-                    Retorno = ToDecimal(d["retorno"]),
-                    Quantidade = d["quantidade"].AsInt32
-                };
-            }).ToList(),
-            PorStatus = statusDocs.Select(d => new DistribuicaoStatusAgg
-            {
-                Status = Enum.Parse<StatusProjeto>(d["_id"].AsString),
-                Quantidade = d["quantidade"].AsInt32
-            }).ToList(),
-            ProjetosAtrasados = atrasados
+                    EstrategiaId = g.Key,
+                    Titulo = titulos.GetValueOrDefault(g.Key, g.Key),
+                    Investimento = g.Sum(p => p.Investimento),
+                    Retorno = g.Sum(p => p.RetornoFinanceiro),
+                    Quantidade = g.Count()
+                })
+                .ToList(),
+            PorStatus = filtrados
+                .GroupBy(p => p.Status)
+                .OrderBy(g => g.Key)
+                .Select(g => new DistribuicaoStatusAgg
+                {
+                    Status = g.Key,
+                    Quantidade = g.Count()
+                })
+                .ToList(),
+            ProjetosAtrasados = filtrados.Count(p =>
+                p.Prazo < hoje && p.Status is not StatusProjeto.CONCLUIDO and not StatusProjeto.CANCELADO)
         };
-    }
-
-    private async Task<int> CountAtrasadosAsync(BsonDocument match, DateOnly hoje, CancellationToken cancellationToken)
-    {
-        var prazoLimite = hoje.ToString("yyyy-MM-dd");
-        var combined = new BsonDocument("$and", new BsonArray
-        {
-            match,
-            new BsonDocument("prazo", new BsonDocument("$lt", prazoLimite)),
-            new BsonDocument("status", new BsonDocument("$nin", new BsonArray { "CONCLUIDO", "CANCELADO" }))
-        });
-
-        var collection = _database.GetCollection<BsonDocument>("projetos");
-        return (int)await collection.CountDocumentsAsync(combined, cancellationToken: cancellationToken);
     }
 
     private async Task<Dictionary<string, string>> LoadEstrategiaTitulosAsync(
@@ -137,60 +91,12 @@ public sealed class RelatorioRepository
             return new Dictionary<string, string>();
         }
 
-        var estrategias = _database.GetCollection<BsonDocument>("estrategias");
-        var filter = Builders<BsonDocument>.Filter.In("_id", ids);
-        var docs = await estrategias.Find(filter).ToListAsync(cancellationToken);
-        return docs.ToDictionary(
-            d => d["_id"].AsString,
-            d => d.GetValue("titulo", "").AsString);
-    }
+        var estrategias = await _dbContext.Estrategias.AsNoTracking()
+            .Where(e => ids.Contains(e.Id))
+            .Select(e => new { e.Id, e.Titulo })
+            .ToListAsync(cancellationToken);
 
-    private static BsonDocument BuildMatch(DashboardFiltroDto filtro)
-    {
-        var clauses = new BsonArray
-        {
-            new BsonDocument("$or", new BsonArray
-            {
-                new BsonDocument("excluidaEmUtc", BsonNull.Value),
-                new BsonDocument("excluidaEmUtc", new BsonDocument("$exists", false))
-            })
-        };
-
-        if (!string.IsNullOrWhiteSpace(filtro.EstrategiaId))
-        {
-            clauses.Add(new BsonDocument("estrategiaId", filtro.EstrategiaId));
-        }
-
-        if (!string.IsNullOrWhiteSpace(filtro.ProjetoId))
-        {
-            clauses.Add(new BsonDocument("_id", filtro.ProjetoId));
-        }
-
-        if (filtro.Inicio is not null)
-        {
-            var start = filtro.Inicio.Value.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
-            clauses.Add(new BsonDocument("criadoEmUtc", new BsonDocument("$gte", start)));
-        }
-
-        if (filtro.Fim is not null)
-        {
-            var end = filtro.Fim.Value.AddDays(1).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
-            clauses.Add(new BsonDocument("criadoEmUtc", new BsonDocument("$lt", end)));
-        }
-
-        return new BsonDocument("$and", clauses);
-    }
-
-    private static decimal ToDecimal(BsonValue value)
-    {
-        return value.BsonType switch
-        {
-            BsonType.Decimal128 => Decimal128.ToDecimal(value.AsDecimal128),
-            BsonType.Double => (decimal)value.AsDouble,
-            BsonType.Int32 => value.AsInt32,
-            BsonType.Int64 => value.AsInt64,
-            _ => 0m
-        };
+        return estrategias.ToDictionary(e => e.Id, e => e.Titulo);
     }
 
     public sealed class RelatorioAgregado

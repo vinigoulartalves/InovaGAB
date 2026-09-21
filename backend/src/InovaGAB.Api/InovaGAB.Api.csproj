@@ -9,7 +9,4 @@
     <ProjectReference Include="..\InovaGAB.Application\InovaGAB.Application.csproj" />
     <ProjectReference Include="..\InovaGAB.Infrastructure\InovaGAB.Infrastructure.csproj" />
   </ItemGroup>
-  <ItemGroup>
-    <Content Include="..\..\..\docs\sprint2\openapi.yaml" Link="openapi-contract.yaml" CopyToOutputDirectory="PreserveNewest" />
-  </ItemGroup>
 </Project>
