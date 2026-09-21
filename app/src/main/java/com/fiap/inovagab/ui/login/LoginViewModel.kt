@@ -78,6 +78,8 @@ class LoginViewModel(
 
     private fun mensagemDeErro(erro: Throwable): String = when (erro) {
         is ApiException -> when (erro.httpCode) {
+            400 -> erro.message?.takeIf { it.isNotBlank() }
+                ?: "Verifique e-mail e senha (mínimo 8 caracteres)."
             401 -> "E-mail ou senha inválidos."
             429 -> "Muitas tentativas. Aguarde e tente novamente."
             else -> erro.message

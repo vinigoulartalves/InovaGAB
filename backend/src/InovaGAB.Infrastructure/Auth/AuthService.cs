@@ -41,15 +41,30 @@ public sealed class AuthService : IAuthService
     public async Task<LoginResponseDto> LoginAsync(LoginRequestDto request, CancellationToken cancellationToken)
     {
         var emailNormalizado = NormalizeEmail(request.Email);
+        var senha = request.Senha?.Trim() ?? string.Empty;
+
         var usuario = await _dbContext.Usuarios
             .FirstOrDefaultAsync(u => u.EmailNormalizado == emailNormalizado, cancellationToken);
+
+        if (usuario is null)
+        {
+            var emailInformado = request.Email.Trim();
+            usuario = await _dbContext.Usuarios
+                .FirstOrDefaultAsync(u => u.Email == emailInformado, cancellationToken);
+        }
 
         if (usuario is null || !usuario.Ativo)
         {
             throw new AuthException(401, "CREDENCIAIS_INVALIDAS", AuthErrors.CredenciaisInvalidas);
         }
 
-        var verify = _passwordHasher.VerifyHashedPassword(usuario, usuario.PasswordHash, request.Senha);
+        if (string.IsNullOrWhiteSpace(usuario.EmailNormalizado))
+        {
+            usuario.EmailNormalizado = emailNormalizado;
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
+
+        var verify = _passwordHasher.VerifyHashedPassword(usuario, usuario.PasswordHash, senha);
         if (verify == PasswordVerificationResult.Failed)
         {
             throw new AuthException(401, "CREDENCIAIS_INVALIDAS", AuthErrors.CredenciaisInvalidas);

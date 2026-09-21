@@ -28,6 +28,17 @@ if [[ -z "${DEV_PASSWORD_OPERADOR1:-}" ]]; then
   exit 0
 fi
 
+trim_env() {
+  local v="$1"
+  v="${v//$'\r'/}"
+  v="${v//$'\n'/}"
+  v="${v#"${v%%[![:space:]]*}"}"
+  v="${v%"${v##*[![:space:]]}"}"
+  printf '%s' "$v"
+}
+
+DEV_PASSWORD_OPERADOR1="$(trim_env "${DEV_PASSWORD_OPERADOR1}")"
+
 # Usuários seed da API (Development) — ver backend seed
 LOGIN_BODY=$(printf '{"email":"operador1@inovagab.local","senha":"%s"}' "${DEV_PASSWORD_OPERADOR1}")
 http_code=$(curl -sS -o "${ARTIFACTS}/login-operador1.json" -w "%{http_code}" \
