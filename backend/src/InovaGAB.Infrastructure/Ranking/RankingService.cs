@@ -19,16 +19,20 @@ public sealed class RankingService : IRankingService
 
     public async Task<RankingResponseDto> GetRankingAsync(CancellationToken cancellationToken)
     {
-        var pontosPorAutor = await _dbContext.EventosPontuacao.AsNoTracking()
+        var eventos = await _dbContext.EventosPontuacao.AsNoTracking()
+            .ToListAsync(cancellationToken);
+        var pontosPorAutor = eventos
             .GroupBy(e => e.AutorId)
             .Select(g => new { AutorId = g.Key, Pontos = g.Sum(e => e.Pontos) })
-            .ToListAsync(cancellationToken);
+            .ToList();
 
         var autorIds = pontosPorAutor.Select(p => p.AutorId).ToList();
-        var usuarios = await _dbContext.Usuarios.AsNoTracking()
+        var todosUsuarios = await _dbContext.Usuarios.AsNoTracking()
+            .ToListAsync(cancellationToken);
+        var usuarios = todosUsuarios
             .Where(u => autorIds.Contains(u.Id))
             .Select(u => new { u.Id, u.Nome })
-            .ToListAsync(cancellationToken);
+            .ToList();
 
         var nomePorId = usuarios.ToDictionary(u => u.Id, u => u.Nome);
 

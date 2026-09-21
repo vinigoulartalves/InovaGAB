@@ -24,6 +24,15 @@ public sealed class ProjetosRelatoriosRankingTests
     private InovaGabWebApplicationFactory? _factory;
     private HttpClient? _client;
 
+    private InovaGabWebApplicationFactory Factory
+    {
+        get
+        {
+            _ = Client;
+            return _factory!;
+        }
+    }
+
     private HttpClient Client
     {
         get
@@ -40,7 +49,7 @@ public sealed class ProjetosRelatoriosRankingTests
     [Fact]
     public async Task Crud_projeto_conversao_relatorios_ranking_e_regras()
     {
-        await AuthTestSeed.SeedAsync(_factory!.Services);
+        await AuthTestSeed.SeedAsync(Factory.Services);
 
         var gestor = await LoginAsync(AuthTestSeed.GestorEmail);
         var lider = await LoginAsync(AuthTestSeed.LiderEmail);
@@ -58,7 +67,7 @@ public sealed class ProjetosRelatoriosRankingTests
             Ativa = true
         });
         estResp.EnsureSuccessStatusCode();
-        var estrategia = (await estResp.Content.ReadFromJsonAsync<EstrategiaDetalheDto>())!;
+        var estrategia = (await estResp.Content.ReadFromJsonAsync<EstrategiaDetalheDto>(IntegrationTestJson.Options))!;
 
         Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", operador.AccessToken);
         Assert.Equal(HttpStatusCode.Forbidden, (await Client.GetAsync("/api/v1/projetos")).StatusCode);
@@ -95,7 +104,7 @@ public sealed class ProjetosRelatoriosRankingTests
             Prazo = DateOnly.FromDateTime(DateTime.UtcNow.AddMonths(2))
         });
         createA.EnsureSuccessStatusCode();
-        var projetoA = (await createA.Content.ReadFromJsonAsync<ProjetoDetalheDto>())!;
+        var projetoA = (await createA.Content.ReadFromJsonAsync<ProjetoDetalheDto>(IntegrationTestJson.Options))!;
 
         var createB = await Client.PostAsJsonAsync("/api/v1/projetos", new ProjetoCreateRequestDto
         {
@@ -133,16 +142,16 @@ public sealed class ProjetosRelatoriosRankingTests
         Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", lider.AccessToken);
         var dash = await Client.GetAsync($"/api/v1/relatorios/dashboard?estrategiaId={estrategia.Id}");
         dash.EnsureSuccessStatusCode();
-        var dashboard = (await dash.Content.ReadFromJsonAsync<DashboardRelatorioDto>())!;
+        var dashboard = (await dash.Content.ReadFromJsonAsync<DashboardRelatorioDto>(IntegrationTestJson.Options))!;
         Assert.Equal(3000m, dashboard.InvestimentoTotal);
         Assert.Equal(4100m, dashboard.RetornoTotal);
         Assert.Equal(1100m, dashboard.LucroTotal);
         Assert.Equal(36.6667m, dashboard.RoiPercentual);
 
+        Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", gestor.AccessToken);
         var gestorDash = await Client.GetAsync("/api/v1/relatorios/dashboard");
         Assert.Equal(HttpStatusCode.Forbidden, gestorDash.StatusCode);
 
-        Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", gestor.AccessToken);
         var zeroInv = await Client.PostAsJsonAsync("/api/v1/projetos", new ProjetoCreateRequestDto
         {
             Nome = "Zero investimento",
@@ -156,12 +165,12 @@ public sealed class ProjetosRelatoriosRankingTests
             Prazo = DateOnly.FromDateTime(DateTime.UtcNow.AddMonths(1))
         });
         zeroInv.EnsureSuccessStatusCode();
-        var zeroProj = (await zeroInv.Content.ReadFromJsonAsync<ProjetoDetalheDto>())!;
+        var zeroProj = (await zeroInv.Content.ReadFromJsonAsync<ProjetoDetalheDto>(IntegrationTestJson.Options))!;
 
         Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", lider.AccessToken);
         var relZero = await Client.GetAsync($"/api/v1/relatorios/projetos/{zeroProj.Id}");
         relZero.EnsureSuccessStatusCode();
-        var relZeroDto = (await relZero.Content.ReadFromJsonAsync<RelatorioProjetoDetalheDto>())!;
+        var relZeroDto = (await relZero.Content.ReadFromJsonAsync<RelatorioProjetoDetalheDto>(IntegrationTestJson.Options))!;
         Assert.Null(relZeroDto.RoiPercentual);
 
         Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", gestor.AccessToken);
@@ -205,12 +214,12 @@ public sealed class ProjetosRelatoriosRankingTests
         Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", lider.AccessToken);
         var dashAfterDelete = await Client.GetAsync($"/api/v1/relatorios/dashboard?estrategiaId={estrategia.Id}");
         dashAfterDelete.EnsureSuccessStatusCode();
-        var dash2 = (await dashAfterDelete.Content.ReadFromJsonAsync<DashboardRelatorioDto>())!;
+        var dash2 = (await dashAfterDelete.Content.ReadFromJsonAsync<DashboardRelatorioDto>(IntegrationTestJson.Options))!;
         Assert.Equal(2050m, dash2.InvestimentoTotal);
 
         var rankingResp = await Client.GetAsync("/api/v1/ranking");
         rankingResp.EnsureSuccessStatusCode();
-        var ranking = (await rankingResp.Content.ReadFromJsonAsync<RankingResponseDto>())!;
+        var ranking = (await rankingResp.Content.ReadFromJsonAsync<RankingResponseDto>(IntegrationTestJson.Options))!;
         Assert.True(ranking.Items.Count >= 1);
         Assert.DoesNotContain(ranking.Items, i => i.Nome.Contains('@'));
     }
@@ -226,7 +235,7 @@ public sealed class ProjetosRelatoriosRankingTests
             EstrategiaId = estrategiaId
         });
         ideiaResp.EnsureSuccessStatusCode();
-        var ideia = (await ideiaResp.Content.ReadFromJsonAsync<IdeiaDetalheDto>())!;
+        var ideia = (await ideiaResp.Content.ReadFromJsonAsync<IdeiaDetalheDto>(IntegrationTestJson.Options))!;
 
         var gestor = await LoginAsync(AuthTestSeed.GestorEmail);
         Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", gestor.AccessToken);
@@ -236,12 +245,12 @@ public sealed class ProjetosRelatoriosRankingTests
             Status = StatusIdeia.APROVADA
         });
         aval.EnsureSuccessStatusCode();
-        return (await aval.Content.ReadFromJsonAsync<IdeiaDetalheDto>())!;
+        return (await aval.Content.ReadFromJsonAsync<IdeiaDetalheDto>(IntegrationTestJson.Options))!;
     }
 
     private async Task<string> GetGestorIdAsync()
     {
-        await using var scope = _factory!.Services.CreateAsyncScope();
+        await using var scope = Factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<InovaGabDbContext>();
         return await db.Usuarios
             .Where(u => u.EmailNormalizado == AuthService.NormalizeEmail(AuthTestSeed.GestorEmail))
@@ -257,7 +266,7 @@ public sealed class ProjetosRelatoriosRankingTests
             Senha = AuthTestSeed.TestPassword
         });
         response.EnsureSuccessStatusCode();
-        return (await response.Content.ReadFromJsonAsync<LoginResponseDto>())!;
+        return (await response.Content.ReadFromJsonAsync<LoginResponseDto>(IntegrationTestJson.Options))!;
     }
 
     private static void EnsureMongo() => MongoTestEnvironment.EnsureAvailable();
