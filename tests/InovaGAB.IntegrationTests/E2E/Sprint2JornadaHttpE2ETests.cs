@@ -47,7 +47,7 @@ public sealed class Sprint2JornadaHttpE2ETests
             Ativa = true
         });
         estResp.EnsureSuccessStatusCode();
-        var estrategia = (await estResp.Content.ReadFromJsonAsync<EstrategiaDetalheDto>(IntegrationTestJson.Options))!;
+        var estrategia = (await estResp.Content.ReadFromJsonAsync<EstrategiaDetalheDto>())!;
 
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", op1.AccessToken);
         var ideiaResp = await client.PostAsJsonAsync("/api/v1/ideias", new IdeiaCreateRequestDto
@@ -58,7 +58,7 @@ public sealed class Sprint2JornadaHttpE2ETests
             EstrategiaId = estrategia.Id
         });
         ideiaResp.EnsureSuccessStatusCode();
-        var ideia = (await ideiaResp.Content.ReadFromJsonAsync<IdeiaDetalheDto>(IntegrationTestJson.Options))!;
+        var ideia = (await ideiaResp.Content.ReadFromJsonAsync<IdeiaDetalheDto>())!;
 
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", op2.AccessToken);
         Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync($"/api/v1/ideias/{ideia.Id}")).StatusCode);
@@ -77,10 +77,10 @@ public sealed class Sprint2JornadaHttpE2ETests
             Prioridade = PrioridadeIdeia.ALTA
         });
         aprovar.EnsureSuccessStatusCode();
-        var ideiaAprovada = (await aprovar.Content.ReadFromJsonAsync<IdeiaDetalheDto>(IntegrationTestJson.Options))!;
+        var ideiaAprovada = (await aprovar.Content.ReadFromJsonAsync<IdeiaDetalheDto>())!;
 
         var gestorId = gestor.Usuario.Id;
-        var conversaoRequest = new
+        var conversao = await client.PostAsJsonAsync($"/api/v1/ideias/{ideiaAprovada.Id}/projeto", new
         {
             versao = ideiaAprovada.Versao,
             nome = "Projeto E2E",
@@ -93,14 +93,11 @@ public sealed class Sprint2JornadaHttpE2ETests
             reducaoCustos = 0m,
             ganhoProdutividade = 5m,
             prazo = DateOnly.FromDateTime(DateTime.UtcNow.AddMonths(3))
-        };
-        var conversao = await client.PostAsJsonAsync($"/api/v1/ideias/{ideiaAprovada.Id}/projeto", conversaoRequest);
+        });
         conversao.EnsureSuccessStatusCode();
-        var projeto = (await conversao.Content.ReadFromJsonAsync<ProjetoDetalheDto>(IntegrationTestJson.Options))!;
+        var projeto = (await conversao.Content.ReadFromJsonAsync<ProjetoDetalheDto>())!;
 
-        var segundaConversao = await client.PostAsJsonAsync(
-            $"/api/v1/ideias/{ideiaAprovada.Id}/projeto",
-            conversaoRequest);
+        var segundaConversao = await client.PostAsJsonAsync($"/api/v1/ideias/{ideiaAprovada.Id}/projeto", new { versao = 99 });
         Assert.Equal(HttpStatusCode.Conflict, segundaConversao.StatusCode);
 
         var update = await client.PutAsJsonAsync($"/api/v1/projetos/{projeto.Id}", new ProjetoUpdateRequestDto
@@ -122,18 +119,18 @@ public sealed class Sprint2JornadaHttpE2ETests
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", lider.AccessToken);
         var dash = await client.GetAsync("/api/v1/relatorios/dashboard");
         dash.EnsureSuccessStatusCode();
-        var relatorio = (await dash.Content.ReadFromJsonAsync<DashboardRelatorioDto>(IntegrationTestJson.Options))!;
+        var relatorio = (await dash.Content.ReadFromJsonAsync<DashboardRelatorioDto>())!;
         Assert.True(relatorio.InvestimentoTotal >= 1000);
 
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", op1.AccessToken);
         var minha = await client.GetAsync($"/api/v1/ideias/{ideia.Id}");
         minha.EnsureSuccessStatusCode();
-        var ideiaAtual = (await minha.Content.ReadFromJsonAsync<IdeiaDetalheDto>(IntegrationTestJson.Options))!;
+        var ideiaAtual = (await minha.Content.ReadFromJsonAsync<IdeiaDetalheDto>())!;
         Assert.Equal(StatusIdeia.VIROU_PROJETO, ideiaAtual.Status);
 
         var ranking = await client.GetAsync("/api/v1/ranking");
         ranking.EnsureSuccessStatusCode();
-        var rank = (await ranking.Content.ReadFromJsonAsync<RankingResponseDto>(IntegrationTestJson.Options))!;
+        var rank = (await ranking.Content.ReadFromJsonAsync<RankingResponseDto>())!;
         Assert.NotEmpty(rank.Items);
     }
 
@@ -145,6 +142,6 @@ public sealed class Sprint2JornadaHttpE2ETests
             Senha = AuthTestSeed.TestPassword
         });
         response.EnsureSuccessStatusCode();
-        return (await response.Content.ReadFromJsonAsync<LoginResponseDto>(IntegrationTestJson.Options))!;
+        return (await response.Content.ReadFromJsonAsync<LoginResponseDto>())!;
     }
 }

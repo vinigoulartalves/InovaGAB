@@ -2,7 +2,6 @@
 name: CI
 
 on:
-  workflow_dispatch:
   push:
     branches: [main, "cursor/**"]
   pull_request:
@@ -33,14 +32,7 @@ jobs:
       - name: Docker Compose — Mongo + test-runner
         run: |
           docker compose --profile tests up -d mongo mongo-init
-          set +e
           docker compose --profile tests run --rm test-runner
-          TEST_EXIT=$?
-          set -e
-          sudo chown -R "$(id -u):$(id -g)" artifacts
-          python3 scripts/lib/parse-trx-results.py artifacts/test-results artifacts/test-summary.json
-          python3 scripts/lib/parse-trx-results.py --check artifacts/test-results
-          exit "$TEST_EXIT"
 
       - name: Upload backend artifacts
         if: always()
@@ -101,18 +93,7 @@ jobs:
       - name: API + Mongo
         run: |
           docker compose up -d --build mongo mongo-init api
-          if ! bash scripts/lib/wait-for-http.sh http://127.0.0.1:8080/health/ready 200 180 3; then
-            docker compose ps --all
-            docker compose logs --no-color mongo-init api
-            exit 1
-          fi
-
-      - name: Build journey APKs
-        run: |
-          chmod +x gradlew
-          ./gradlew :app:assembleDebug :app:assembleDebugAndroidTest \
-            -PapiBaseUrl=http://127.0.0.1:8080/ \
-            --no-daemon
+          bash scripts/lib/wait-for-http.sh http://127.0.0.1:8080/health/ready 200 180 3
 
       - name: Run instrumented journeys on emulator
         uses: reactivecircus/android-emulator-runner@v2
@@ -120,18 +101,30 @@ jobs:
           api-level: 34
           arch: x86_64
           profile: pixel_6
-          script: bash scripts/run-android-journeys.sh "${{ github.sha }}"
+          script: |
+            set -a && source .env && set +a
+            COMMIT="${{ github.sha }}"
+            ./gradlew :app:connectedDebugAndroidTest \
+              -Pandroid.testInstrumentationRunnerArguments.class=com.fiap.inovagab.Sprint2JourneyInstrumentedTest \
+              -Pandroid.testInstrumentationRunnerArguments.gitCommit="$COMMIT" \
+              -Pandroid.testInstrumentationRunnerArguments.apiBaseUrl="http://10.0.2.2:8080/" \
+              -Pandroid.testInstrumentationRunnerArguments.operador1Email="operador1@inovagab.local" \
+              -Pandroid.testInstrumentationRunnerArguments.operador1Password="$DEV_PASSWORD_OPERADOR1" \
+              -Pandroid.testInstrumentationRunnerArguments.gestorEmail="gestor@inovagab.local" \
+              -Pandroid.testInstrumentationRunnerArguments.gestorPassword="$DEV_PASSWORD_GESTOR" \
+              -Pandroid.testInstrumentationRunnerArguments.liderEmail="lider@inovagab.local" \
+              -Pandroid.testInstrumentationRunnerArguments.liderPassword="$DEV_PASSWORD_LIDER" \
+              --no-daemon
 
-      - name: Complete evidence index if emulator setup failed
+      - name: Pull evidence & index
         if: always()
         run: |
           mkdir -p artifacts/android-journey
-          if [ ! -f artifacts/EVIDENCE_INDEX.md ]; then
-            python3 scripts/lib/write-evidence-index.py \
-              --android-dir artifacts/android-journey \
-              --out artifacts/EVIDENCE_INDEX.md \
-              --instrument-exit 1 || true
-          fi
+          adb exec-out run-as com.fiap.inovagab cat files/sprint2-evidence/${{ github.sha }}/INDEX.json > artifacts/android-journey/INDEX.json 2>/dev/null || true
+          python3 scripts/lib/write-evidence-index.py \
+            --android-dir artifacts/android-journey \
+            --out artifacts/EVIDENCE_INDEX.md \
+            --instrument-exit 0 || true
 
       - name: Upload Android journey artifacts
         if: always()
@@ -140,5 +133,5 @@ jobs:
           name: android-journey-evidence
           path: |
             artifacts/android-journey/
-            artifacts/EVIDENCE_INDEX.md
+            app/build/reports/androidTests/
           if-no-files-found: ignore

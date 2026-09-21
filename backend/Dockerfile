@@ -8,7 +8,6 @@ COPY backend/src/InovaGAB.Domain/ ./src/InovaGAB.Domain/
 COPY backend/src/InovaGAB.Application/ ./src/InovaGAB.Application/
 COPY backend/src/InovaGAB.Infrastructure/ ./src/InovaGAB.Infrastructure/
 COPY backend/src/InovaGAB.Api/ ./src/InovaGAB.Api/
-COPY docs/sprint2/openapi.yaml /docs/sprint2/openapi.yaml
 RUN dotnet restore src/InovaGAB.Api/InovaGAB.Api.csproj
 RUN dotnet publish src/InovaGAB.Api/InovaGAB.Api.csproj -c Release -o /app/publish /p:UseAppHost=false
 
