@@ -67,9 +67,6 @@ public sealed class MongoEfCoreCrudTests
         staleAttach.Name = "conflict";
         await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() => db.SaveChangesAsync());
 
-        // A failed SaveChanges keeps the stale entity in Modified state. Clear it
-        // before validating that a fresh version can still be updated.
-        db.ChangeTracker.Clear();
         var fresh = await db.IntegrationProbes.FirstAsync(x => x.Id == id);
         fresh.Name = "updated";
         fresh.Versao = 3;

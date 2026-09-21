@@ -19,15 +19,6 @@ public sealed class EstrategiasIdeiasTests
     private InovaGabWebApplicationFactory? _factory;
     private HttpClient? _client;
 
-    private InovaGabWebApplicationFactory Factory
-    {
-        get
-        {
-            _ = Client;
-            return _factory!;
-        }
-    }
-
     private HttpClient Client
     {
         get
@@ -44,7 +35,7 @@ public sealed class EstrategiasIdeiasTests
     [Fact]
     public async Task Fluxo_estrategia_ideia_pontuacao_e_permissoes()
     {
-        await AuthTestSeed.SeedAsync(Factory.Services);
+        await AuthTestSeed.SeedAsync(_factory!.Services);
 
         var lider = await LoginAsync(AuthTestSeed.LiderEmail);
         var op1 = await LoginAsync(AuthTestSeed.OperadorEmail);
@@ -63,7 +54,7 @@ public sealed class EstrategiasIdeiasTests
             Ativa = true
         });
         estrategia.EnsureSuccessStatusCode();
-        var est = (await estrategia.Content.ReadFromJsonAsync<EstrategiaDetalheDto>(IntegrationTestJson.Options))!;
+        var est = (await estrategia.Content.ReadFromJsonAsync<EstrategiaDetalheDto>())!;
 
         Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", op1.AccessToken);
         var ideiaResp = await Client.PostAsJsonAsync("/api/v1/ideias", new IdeiaCreateRequestDto
@@ -74,9 +65,9 @@ public sealed class EstrategiasIdeiasTests
             EstrategiaId = est.Id
         });
         ideiaResp.EnsureSuccessStatusCode();
-        var ideia = (await ideiaResp.Content.ReadFromJsonAsync<IdeiaDetalheDto>(IntegrationTestJson.Options))!;
+        var ideia = (await ideiaResp.Content.ReadFromJsonAsync<IdeiaDetalheDto>())!;
 
-        await using (var scope = Factory.Services.CreateAsyncScope())
+        await using (var scope = _factory!.Services.CreateAsyncScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<InovaGabDbContext>();
             var eventos = await db.EventosPontuacao.CountAsync(
@@ -97,7 +88,7 @@ public sealed class EstrategiasIdeiasTests
         });
         avaliacao.EnsureSuccessStatusCode();
 
-        await using (var scope = Factory.Services.CreateAsyncScope())
+        await using (var scope = _factory.Services.CreateAsyncScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<InovaGabDbContext>();
             var pontos = await db.EventosPontuacao
@@ -113,7 +104,7 @@ public sealed class EstrategiasIdeiasTests
         });
         reAvalia.EnsureSuccessStatusCode();
 
-        await using (var scope = Factory.Services.CreateAsyncScope())
+        await using (var scope = _factory.Services.CreateAsyncScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<InovaGabDbContext>();
             var aprovacoes = await db.EventosPontuacao.CountAsync(
@@ -129,7 +120,7 @@ public sealed class EstrategiasIdeiasTests
     [Fact]
     public async Task Ideia_rejeita_estrategia_nao_vigente()
     {
-        await AuthTestSeed.SeedAsync(Factory.Services);
+        await AuthTestSeed.SeedAsync(_factory!.Services);
         var lider = await LoginAsync(AuthTestSeed.LiderEmail);
         var op1 = await LoginAsync(AuthTestSeed.OperadorEmail);
 
@@ -145,7 +136,7 @@ public sealed class EstrategiasIdeiasTests
             Ativa = true
         });
         estrategia.EnsureSuccessStatusCode();
-        var est = (await estrategia.Content.ReadFromJsonAsync<EstrategiaDetalheDto>(IntegrationTestJson.Options))!;
+        var est = (await estrategia.Content.ReadFromJsonAsync<EstrategiaDetalheDto>())!;
 
         Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", op1.AccessToken);
         var ideiaResp = await Client.PostAsJsonAsync("/api/v1/ideias", new IdeiaCreateRequestDto
@@ -166,7 +157,7 @@ public sealed class EstrategiasIdeiasTests
             Senha = AuthTestSeed.TestPassword
         });
         response.EnsureSuccessStatusCode();
-        return (await response.Content.ReadFromJsonAsync<LoginResponseDto>(IntegrationTestJson.Options))!;
+        return (await response.Content.ReadFromJsonAsync<LoginResponseDto>())!;
     }
 
     private static void EnsureMongo()

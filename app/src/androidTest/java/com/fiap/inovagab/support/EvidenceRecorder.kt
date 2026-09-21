@@ -23,7 +23,7 @@ object EvidenceRecorder {
 
     fun evidenceRoot(): File {
         val ctx = InstrumentationRegistry.getInstrumentation().targetContext
-        return File(ctx.filesDir, "sprint2-evidence/${gitCommit()}").apply { mkdirs() }
+        return File(ctx.getExternalFilesDir(null), "sprint2-evidence/${gitCommit()}").apply { mkdirs() }
     }
 
     fun record(
