@@ -76,7 +76,7 @@ builder.Services.AddSwaggerGen(c =>
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
-builder.Services.AddInovaGabAuthentication(builder.Configuration);
+builder.Services.AddInovaGabAuthentication();
 
 builder.Services.AddHealthChecks()
     .AddCheck<MongoReadinessHealthCheck>("mongodb", tags: ["ready"]);

@@ -22,6 +22,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 
 namespace InovaGAB.Infrastructure;
@@ -37,22 +38,27 @@ public static class DependencyInjection
         services.Configure<AiOptions>(configuration.GetSection(AiOptions.SectionName));
         services.Configure<SeedOptions>(configuration.GetSection(SeedOptions.SectionName));
 
-        var mongoOptions = configuration.GetSection(MongoOptions.SectionName).Get<MongoOptions>()
-            ?? throw new InvalidOperationException("Mongo configuration is required.");
-
-        if (string.IsNullOrWhiteSpace(mongoOptions.ConnectionString))
+        // Mongo settings are resolved lazily through IOptions so that every configuration
+        // source (appsettings, environment variables, test overrides) is honoured, and so
+        // the DbContext shares the single IMongoClient instance.
+        services.AddSingleton<IMongoClient>(sp =>
         {
-            throw new InvalidOperationException("Mongo:ConnectionString is required.");
-        }
+            var mongo = sp.GetRequiredService<IOptions<MongoOptions>>().Value;
+            if (string.IsNullOrWhiteSpace(mongo.ConnectionString))
+            {
+                throw new InvalidOperationException("Mongo:ConnectionString is required.");
+            }
 
-        services.AddSingleton<IMongoClient>(_ => new MongoClient(mongoOptions.ConnectionString));
+            return new MongoClient(mongo.ConnectionString);
+        });
         services.AddSingleton<MongoInitializationState>();
         services.AddScoped<MongoIndexInitializer>();
         services.AddScoped<MongoStartupInitializer>();
 
-        services.AddDbContext<InovaGabDbContext>(options =>
+        services.AddDbContext<InovaGabDbContext>((sp, options) =>
         {
-            options.UseMongoDB(mongoOptions.ConnectionString, mongoOptions.DatabaseName);
+            var mongo = sp.GetRequiredService<IOptions<MongoOptions>>().Value;
+            options.UseMongoDB(sp.GetRequiredService<IMongoClient>(), mongo.DatabaseName);
         });
 
         services.AddHostedService<MongoInitializationHostedService>();
@@ -77,7 +83,7 @@ public static class DependencyInjection
 
         services.AddHttpClient(GeminiIdeiaAnalysisClient.HttpClientName, (sp, client) =>
         {
-            var ai = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<AiOptions>>().Value;
+            var ai = sp.GetRequiredService<IOptions<AiOptions>>().Value;
             client.BaseAddress = ai.BaseUrl;
             client.Timeout = TimeSpan.FromSeconds(Math.Max(5, ai.TimeoutSeconds));
         });

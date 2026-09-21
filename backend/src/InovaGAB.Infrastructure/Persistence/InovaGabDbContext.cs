@@ -7,6 +7,7 @@ using InovaGAB.Domain.Probe;
 using InovaGAB.Domain.Usuarios;
 using Microsoft.EntityFrameworkCore;
 using MongoDB.EntityFrameworkCore.Extensions;
+using MongoDB.EntityFrameworkCore.Metadata.Conventions;
 
 namespace InovaGAB.Infrastructure.Persistence;
 
@@ -15,6 +16,17 @@ public sealed class InovaGabDbContext : DbContext
     public InovaGabDbContext(DbContextOptions<InovaGabDbContext> options)
         : base(options)
     {
+    }
+
+    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+    {
+        base.ConfigureConventions(configurationBuilder);
+
+        // Documents are persisted with camelCase element names (e.g. "emailNormalizado",
+        // "tokenHash"). MongoIndexInitializer relies on this convention: without it the
+        // provider would use PascalCase property names and the unique indexes would
+        // point at non-existent fields, breaking seed/login with duplicate-key errors.
+        configurationBuilder.Conventions.Add(_ => new CamelCaseElementNameConvention());
     }
 
     public DbSet<IntegrationProbeDocument> IntegrationProbes => Set<IntegrationProbeDocument>();

@@ -22,6 +22,15 @@ public sealed class AuthEndpointsTests
     private InovaGabWebApplicationFactory? _factory;
     private HttpClient? _client;
 
+    private InovaGabWebApplicationFactory Factory
+    {
+        get
+        {
+            _ = Client;
+            return _factory!;
+        }
+    }
+
     private HttpClient Client
     {
         get
@@ -39,7 +48,7 @@ public sealed class AuthEndpointsTests
     public async Task Login_valido_retorna_tokens_sem_hash()
     {
         EnsureMongo();
-        await AuthTestSeed.SeedAsync(_factory!.Services);
+        await AuthTestSeed.SeedAsync(Factory.Services);
 
         var response = await Client.PostAsJsonAsync("/api/v1/auth/login", new LoginRequestDto
         {
@@ -54,7 +63,7 @@ public sealed class AuthEndpointsTests
 
         var body = JsonSerializer.Deserialize<LoginResponseDto>(
             json,
-            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            IntegrationTestJson.Options);
 
         Assert.NotNull(body);
         Assert.False(string.IsNullOrWhiteSpace(body!.AccessToken));
@@ -66,7 +75,7 @@ public sealed class AuthEndpointsTests
     public async Task Login_invalido_retorna_401_generico()
     {
         EnsureMongo();
-        await AuthTestSeed.SeedAsync(_factory!.Services);
+        await AuthTestSeed.SeedAsync(Factory.Services);
 
         var response = await Client.PostAsJsonAsync("/api/v1/auth/login", new LoginRequestDto
         {
@@ -83,7 +92,7 @@ public sealed class AuthEndpointsTests
     public async Task Token_adulterado_retorna_401_no_me()
     {
         EnsureMongo();
-        await AuthTestSeed.SeedAsync(_factory!.Services);
+        await AuthTestSeed.SeedAsync(Factory.Services);
         var login = await LoginAsync(AuthTestSeed.OperadorEmail);
 
         var tampered = login.AccessToken[..^1] + (login.AccessToken[^1] == 'a' ? 'b' : 'a');
@@ -97,7 +106,7 @@ public sealed class AuthEndpointsTests
     public async Task Token_expirado_retorna_401_no_me()
     {
         EnsureMongo();
-        await AuthTestSeed.SeedAsync(_factory!.Services);
+        await AuthTestSeed.SeedAsync(Factory.Services);
 
         var token = CreateExpiredToken();
         Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
@@ -110,7 +119,7 @@ public sealed class AuthEndpointsTests
     public async Task Refresh_valido_rotaciona_e_reuso_retorna_409()
     {
         EnsureMongo();
-        await AuthTestSeed.SeedAsync(_factory!.Services);
+        await AuthTestSeed.SeedAsync(Factory.Services);
         var login = await LoginAsync(AuthTestSeed.OperadorEmail);
         var oldRefresh = login.RefreshToken;
 
@@ -131,10 +140,10 @@ public sealed class AuthEndpointsTests
     public async Task Refresh_expirado_retorna_401()
     {
         EnsureMongo();
-        await AuthTestSeed.SeedAsync(_factory!.Services);
+        await AuthTestSeed.SeedAsync(Factory.Services);
         var login = await LoginAsync(AuthTestSeed.OperadorEmail);
 
-        await using var scope = _factory!.Services.CreateAsyncScope();
+        await using var scope = Factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<InovaGabDbContext>();
         var hash = RefreshTokenHasher.Hash(login.RefreshToken);
         var stored = await db.RefreshTokens.FirstAsync(t => t.TokenHash == hash);
@@ -152,7 +161,7 @@ public sealed class AuthEndpointsTests
     public async Task Logout_revoga_refresh_e_e_idempotente()
     {
         EnsureMongo();
-        await AuthTestSeed.SeedAsync(_factory!.Services);
+        await AuthTestSeed.SeedAsync(Factory.Services);
         var login = await LoginAsync(AuthTestSeed.OperadorEmail);
 
         var logout = await Client.PostAsJsonAsync("/api/v1/auth/logout", new RefreshRequestDto
@@ -178,7 +187,7 @@ public sealed class AuthEndpointsTests
     public async Task Responsaveis_apenas_gestor()
     {
         EnsureMongo();
-        await AuthTestSeed.SeedAsync(_factory!.Services);
+        await AuthTestSeed.SeedAsync(Factory.Services);
 
         var operadorLogin = await LoginAsync(AuthTestSeed.OperadorEmail);
         Client.DefaultRequestHeaders.Authorization =
@@ -197,7 +206,7 @@ public sealed class AuthEndpointsTests
     public async Task Operador_nao_acessa_projetos()
     {
         EnsureMongo();
-        await AuthTestSeed.SeedAsync(_factory!.Services);
+        await AuthTestSeed.SeedAsync(Factory.Services);
         var login = await LoginAsync(AuthTestSeed.OperadorEmail);
         Client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", login.AccessToken);
@@ -214,7 +223,7 @@ public sealed class AuthEndpointsTests
             Senha = AuthTestSeed.TestPassword
         });
         response.EnsureSuccessStatusCode();
-        return (await response.Content.ReadFromJsonAsync<LoginResponseDto>())!;
+        return (await response.Content.ReadFromJsonAsync<LoginResponseDto>(IntegrationTestJson.Options))!;
     }
 
     private string CreateExpiredToken()
