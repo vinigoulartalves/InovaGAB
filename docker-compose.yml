@@ -37,7 +37,8 @@ services:
       RS_NAME: rs0
     volumes:
       - ./infra/mongo/init-replica-set.sh:/init-replica-set.sh:ro
-    entrypoint: ["/bin/bash", "/init-replica-set.sh"]
+    # Remove CR de checkouts Windows antes de executar (evita "set: pipefail: invalid option").
+    entrypoint: ["/bin/bash", "-lc", "tr -d '\\r' < /init-replica-set.sh | bash -s"]
     restart: "on-failure"
 
   api:

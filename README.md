@@ -116,6 +116,7 @@ Gera `deliverables/InovaGAB_Backend_Sprint2.zip` e `InovaGAB_Android_Sprint2.zip
 |----------|------|
 | API `503` ready | Aguardar init replica set; `docker compose logs mongo-init api` |
 | Compose trava em `mongo-init Waiting` | Aguardar 1–2 min na 1ª subida; ver logs (`PRIMARY elected`). Se persistir: `docker compose down -v` e `bash scripts/dev-up.sh` |
+| `mongo-init`: `set: pipefail: invalid option` | Script com CRLF (Windows): `git pull`, `.gitattributes` força LF; ou `docker compose down` e subir de novo (entrypoint remove `\\r`). Evite `core.autocrlf=true` em scripts `.sh` |
 | Login 401 | Conferir `.env` e contas `*@inovagab.local` (senhas `DEV_PASSWORD_*` do `setup-dev.sh`) |
 | API cai no startup / seed | Após atualizar o repo: `docker compose down -v` (recria índices Mongo alinhados ao EF) |
 | Android não conecta | Emulador: backend em `127.0.0.1:8080`; usar build **debug** |
