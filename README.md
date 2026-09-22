@@ -263,41 +263,6 @@ CI: `.github/workflows/ci.yml` (backend Mongo + Android lint/unit + jornadas ins
 
 ---
 
-## Empacotamento para entrega
-
-Gera ZIPs em `deliverables/`:
-
-```bash
-bash scripts/package-delivery.sh
-# ou: .\scripts\package-delivery.ps1
-```
-
-| Artefato | Conteúdo |
-|----------|----------|
-| `InovaGAB_Backend_Sprint2.zip` | backend, tests, infra, scripts, compose, `.env.example`, Postman, **README** |
-| `InovaGAB_Android_Sprint2.zip` | fontes Gradle + `apk/app-debug.apk` + Postman + **README** |
-
-Exclui `.git`, `.env`, segredos, `bin/obj`; inclui APK debug. Após gerar, o script imprime **SHA-256** dos ZIPs no terminal.
-
-**Roteiro de avaliação (ZIP):**
-
-1. Extrair Backend → `bash scripts/setup-dev.sh` → `bash scripts/dev-up.sh` → `bash scripts/smoke-api.sh`
-2. Importar Postman de `exemplos/postman/` (ou `deliverables/postman/` no monorepo)
-3. Instalar `apk/app-debug.apk` com backend em `127.0.0.1:8080` (emulador: `10.0.2.2:8080`)
-
-**Não** publicar automaticamente na FIAP a partir deste repositório.
-
-### Checklist antes de submeter
-
-- [ ] Nomes e RMs preenchidos neste README
-- [ ] `bash scripts/smoke-api.sh` OK com `.env` local
-- [ ] Postman: login + pelo menos um fluxo gestor/líder
-- [ ] APK debug instalado e login seed no emulador/dispositivo
-- [ ] Apresentação **PDF/PPT** conforme enunciado (fora deste repositório, se exigido)
-- [ ] ZIPs gerados e hashes anotados para o formulário de entrega
-
----
-
 ## Troubleshooting
 
 | Problema | Ação |
