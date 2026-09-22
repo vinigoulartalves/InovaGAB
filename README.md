@@ -11,11 +11,9 @@ Plataforma mobile de inovação corporativa (FIAP + Grupo Águia Branca): app **
 
 ## Identificação da entrega
 
-Preencher antes de submeter na FIAP:
-
 | Campo | Valor |
 |-------|-------|
-| Integrantes | `[NOME]` — RM `[RM]` |
+| Integrantes | `Vinícius Goulart Alves` — RM `564616` |
 | Disciplina / turma | _(conforme enunciado)_ |
 | Repositório | _(URL se aplicável)_ |
 
