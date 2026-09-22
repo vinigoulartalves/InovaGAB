@@ -1,0 +1,3 @@
+# Scripts e init do Docker devem usar LF (bash no Linux falha com CRLF: "set: pipefail").
+*.sh text eol=lf
+infra/mongo/init-replica-set.sh text eol=lf

@@ -66,19 +66,12 @@ public sealed class DevDataSeeder
             ("lider@inovagab.local", "Líder Demo", PerfilUsuario.LIDER, "DEV_PASSWORD_LIDER")
         };
 
+        var changed = false;
+
         foreach (var (email, nome, perfil, passwordKey) in definitions)
         {
             var normalizado = AuthService.NormalizeEmail(email);
-            var exists = await _dbContext.Usuarios.AnyAsync(
-                u => u.EmailNormalizado == normalizado,
-                cancellationToken);
-
-            if (exists)
-            {
-                continue;
-            }
-
-            var senha = _configuration[passwordKey];
+            var senha = _configuration[passwordKey]?.Trim();
             if (string.IsNullOrWhiteSpace(senha))
             {
                 _logger.LogWarning(
@@ -88,23 +81,58 @@ public sealed class DevDataSeeder
                 continue;
             }
 
-            var usuario = new Usuario
+            var usuario = await _dbContext.Usuarios
+                .FirstOrDefaultAsync(
+                    u => u.EmailNormalizado == normalizado || u.Email == email,
+                    cancellationToken);
+
+            if (usuario is null)
             {
-                Id = Guid.NewGuid().ToString("N"),
-                Nome = nome,
-                Email = email,
-                EmailNormalizado = normalizado,
-                Perfil = perfil,
-                Ativo = true,
-                Demo = true,
-                CriadoEmUtc = DateTime.UtcNow
-            };
-            usuario.PasswordHash = _passwordHasher.HashPassword(usuario, senha);
-            _dbContext.Usuarios.Add(usuario);
-            _logger.LogInformation("Usuário demo criado: {Email} ({Perfil})", email, perfil);
+                usuario = new Usuario
+                {
+                    Id = Guid.NewGuid().ToString("N"),
+                    Nome = nome,
+                    Email = email,
+                    EmailNormalizado = normalizado,
+                    Perfil = perfil,
+                    Ativo = true,
+                    Demo = true,
+                    CriadoEmUtc = DateTime.UtcNow
+                };
+                usuario.PasswordHash = _passwordHasher.HashPassword(usuario, senha);
+                _dbContext.Usuarios.Add(usuario);
+                _logger.LogInformation("Usuário demo criado: {Email} ({Perfil})", email, perfil);
+                changed = true;
+                continue;
+            }
+
+            if (string.IsNullOrWhiteSpace(usuario.EmailNormalizado))
+            {
+                usuario.EmailNormalizado = normalizado;
+                changed = true;
+            }
+
+            if (!usuario.Demo)
+            {
+                continue;
+            }
+
+            var verify = _passwordHasher.VerifyHashedPassword(usuario, usuario.PasswordHash, senha);
+            if (verify == PasswordVerificationResult.Failed)
+            {
+                usuario.PasswordHash = _passwordHasher.HashPassword(usuario, senha);
+                _logger.LogInformation(
+                    "Senha demo sincronizada ({PasswordKey}) para {Email}",
+                    passwordKey,
+                    email);
+                changed = true;
+            }
         }
 
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        if (changed)
+        {
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
     }
 
     private async Task SeedDominioDemoAsync(CancellationToken cancellationToken)

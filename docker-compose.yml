@@ -10,6 +10,8 @@ services:
     command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
     volumes:
       - mongo_data:/data/db
+    ports:
+      - "127.0.0.1:27017:27017"
     healthcheck:
       test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
       interval: 5s
@@ -25,16 +27,19 @@ services:
     depends_on:
       mongo:
         condition: service_healthy
+    # Compartilha a rede do mongod: conexão local evita timeouts de server selection
+    # antes do rs.initiate(); o membro do replica set continua mongo:27017 (RS_MEMBER_HOST).
+    network_mode: "service:mongo"
     environment:
-      MONGO_HOST: mongo
+      MONGO_HOST: 127.0.0.1
       MONGO_PORT: 27017
+      RS_MEMBER_HOST: mongo:27017
       RS_NAME: rs0
     volumes:
       - ./infra/mongo/init-replica-set.sh:/init-replica-set.sh:ro
-    entrypoint: ["/bin/bash", "/init-replica-set.sh"]
+    # Remove CR de checkouts Windows antes de executar (evita "set: pipefail: invalid option").
+    entrypoint: ["/bin/bash", "-lc", "tr -d '\\r' < /init-replica-set.sh | bash -s"]
     restart: "on-failure"
-    networks:
-      - inovagab
 
   api:
     build:
