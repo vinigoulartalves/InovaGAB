@@ -4,7 +4,6 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0.425-bookworm-slim AS build
 WORKDIR /src
 COPY Directory.Packages.props ./
 COPY backend/ ./backend/
-COPY docs/sprint2/openapi.yaml ./docs/sprint2/openapi.yaml
 RUN dotnet restore backend/src/InovaGAB.Api/InovaGAB.Api.csproj
 RUN dotnet publish backend/src/InovaGAB.Api/InovaGAB.Api.csproj -c Release -o /app/publish /p:UseAppHost=false
 

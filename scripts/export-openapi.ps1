@@ -1,6 +1,7 @@
 $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $PSScriptRoot
-$Out = Join-Path $Root "docs\sprint2\openapi-runtime.json"
+$Out = Join-Path $Root "deliverables\openapi-runtime.json"
+New-Item -ItemType Directory -Force -Path (Join-Path $Root "deliverables") | Out-Null
 $Base = if ($env:BASE_URL) { $env:BASE_URL } else { "http://127.0.0.1:8080" }
 $Base = $Base.TrimEnd("/")
 $Url = "$Base/swagger/v1/swagger.json"
