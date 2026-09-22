@@ -54,7 +54,7 @@ builder.Services.AddSwaggerGen(c =>
     {
         Title = "InovaGAB API",
         Version = "v1",
-        Description = "Sprint 2 — auth, estratégias, ideias, projetos, relatórios, ranking e análises IA (Gemini opcional). Ver docs/sprint2/ENDPOINTS.md e openapi.yaml."
+        Description = "Sprint 2 — auth, estratégias, ideias, projetos, relatórios, ranking e análises IA (Gemini opcional). Ver README.md e collection Postman em deliverables/postman/."
     });
     c.AddSecurityDefinition("bearerAuth", new OpenApiSecurityScheme
     {

@@ -9,7 +9,7 @@ public sealed class AiOptions
     public string? ApiKey { get; set; }
 
     /// <summary>
-    /// Modelo Gemini (configurável via AI__Model). Padrão: gemini-2.0-flash — ver docs/sprint2/IA_GEMINI.md.
+    /// Modelo Gemini (configurável via AI__Model). Padrão: gemini-2.0-flash — ver README.md.
     /// </summary>
     public string Model { get; set; } = "gemini-2.0-flash";
 
